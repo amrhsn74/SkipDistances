@@ -48,20 +48,29 @@ The things the product stores: clients and the market they operate in, the peopl
 | `status` | `active` \| `inactive` — gates whether any content may be produced |
 | `tier` | informational only, no behavior tied to it |
 | `channels` | list |
-| `market_id` FK → Market | single-select, not nullable once set |
-| `account_manager_id` FK → User | default internal reviewer for this client |
-| `active_brand_guide_id` FK → BrandGuideVersion, nullable | null = no governing guide on file |
+| `account_manager_id` FK → User, nullable | default internal reviewer for this client; null for former clients with no active owner (e.g. CL-109) |
+| `active_brand_guide_id` FK → BrandGuideVersion, nullable | null = no governing guide on file — the common case: only 8 of the 150 seeded clients have one |
 | `sensitive_sector` | derived from industry (healthcare / financial / government) |
 
-**Market** — seeded with exactly one row today
+> A client's markets are **not** a column here — see `ClientMarket`. A client operates in one or more markets, chosen by the account manager at creation.
+
+**Market** — seeded with two rows
 | Field | Notes |
 |---|---|
 | `market_id` PK | |
-| `name` | "Saudi Arabia" |
-| `country_code` | SA |
+| `name` | "Egypt" \| "Saudi Arabia" |
+| `country_code` | EG \| SA |
 | `calendar_system` | informational — e.g. "gregorian_and_hijri" |
 
-> A real table rather than a hardcoded enum, so a second market is a data insert, not a migration.
+> A real table rather than a hardcoded enum, so a third market is a data insert, not a migration. Egypt is the market the seeded roster and brand guides are written for (NileFit's audience is "Cairo and Alexandria"; agency Clause 1.3's worked example is "Egypt's leading"). Saudi Arabia is seeded alongside it so the multi-market path is demonstrable rather than theoretical.
+
+**ClientMarket** — which markets a client operates in
+| Field | Notes |
+|---|---|
+| `client_market_id` PK | |
+| `client_id` FK → Client, `market_id` FK → Market | unique together |
+
+> Every client has at least one row. The account manager picks one or both at client creation, and may change the set later. This is what makes a market a many-to-many rather than a column, without a schema change when a third market is added.
 
 ### Brand governance
 
@@ -93,6 +102,7 @@ The things the product stores: clients and the market they operate in, the peopl
 | `occasion_id` PK | |
 | `market_id` FK → Market | |
 | `name`, `category` | e.g. "Ramadan"; religious \| national \| seasonal \| retail |
+| `shared_key`, nullable | set when the same observance exists in more than one market — e.g. `ramadan`, `eid_al_fitr`. Lets the engine recognise Egypt's and Saudi Arabia's Ramadan rows as one occasion and produce a single market-neutral item, instead of two near-duplicates. National days have no `shared_key` and stay market-specific. |
 | `date_type` | `fixed_gregorian` \| `hijri_based` |
 | `month`, `day` | used only when date_type = fixed_gregorian |
 
@@ -126,6 +136,7 @@ The things the product stores: clients and the market they operate in, the peopl
 | `content_form` | post \| image \| video \| reel \| photoshoot \| email \| blog_post \| ad_copy \| hashtag_set \| cta \| creative_prompt |
 | `platform` | instagram \| tiktok \| facebook \| linkedin \| email |
 | `content_body` | current draft text; visual/video forms carry content via linked MediaAsset rows instead |
+| `market_id` FK → Market, nullable | null = market-neutral (evergreen or shared-occasion) item, produced once; set = item written for that one market's occasion and scheduled against that market's date. Must be a market the client operates in. |
 | `scheduled_date` | target/proposed publish date — distinct from the scheduled status |
 | `status` | drafted \| in_refinement \| pending_internal_review \| internal_approved \| pending_client_review \| client_approved \| scheduled \| declined \| flagged \| publishing \| published \| publish_failed |
 | `flagged_clause_id` FK, nullable | primary rule broken, if flagged |
@@ -261,8 +272,8 @@ erDiagram
     Client ||--o{ Campaign : submits
     Client ||--o{ BrandGuideVersion : "has versions of"
     Client ||--o{ ClientAssignment : "has team"
-    Client }o--|| User : "default account manager"
-    Client }o--|| Market : "operates in"
+    Client }o--o| User : "default account manager"
+    Client ||--|{ ClientMarket : "operates in"
     User ||--o{ ClientAssignment : "assigned to"
     User ||--o{ Approval : decides
     User ||--o{ AuditLog : performs
@@ -286,13 +297,18 @@ erDiagram
     Client {
         string client_id PK
         string status
-        string market_id FK
         string active_brand_guide_id FK
+    }
+    ClientMarket {
+        string client_market_id PK
+        string client_id FK
+        string market_id FK
     }
     ContentItem {
         string content_item_id PK
         string campaign_id FK
         string content_form
+        string market_id FK "nullable - null = market-neutral"
         string status
         date scheduled_date
     }
@@ -308,8 +324,9 @@ erDiagram
 
 ```mermaid
 erDiagram
-    Market ||--o{ Client : "operates in"
+    Market ||--o{ ClientMarket : "operated in by"
     Market ||--o{ Occasion : scopes
+    Market ||--o{ ContentItem : "targeted by, optionally"
 
     Occasion ||--o{ OccasionDate : "resolved per year"
     Occasion ||--o{ Campaign : "built around"
@@ -359,8 +376,9 @@ erDiagram
 
 | Requirement | Satisfied by |
 |---|---|
-| Choose market (Saudi Arabia for now) | `Market` table, `Client.market_id`, seeded with one row |
-| Regional and local occasion calendar | `Occasion` + `OccasionDate`, scoped by market_id, Hijri-aware |
+| Choose market — one or both of Egypt and Saudi Arabia | `Market` table seeded with two rows + `ClientMarket` join, set by the account manager at client creation |
+| A dual-market client's plan covers both | `ContentItem.market_id` nullable — market-neutral items produced once, occasion-specific items produced per market |
+| Regional and local occasion calendar | `Occasion` + `OccasionDate`, scoped by market_id, Hijri-aware, `shared_key` collapsing observances common to both markets |
 | Full multi-form content plan | `ContentItem.content_form` + `MediaAsset` |
 | Schedules refer to upcoming events and occasions | `resolve_calendar` engine step + `Campaign.related_occasion_id` + `scheduled_date` |
 | Publish to Instagram | `PlatformConnection` + Publishing Layer, scoped to one tester account |

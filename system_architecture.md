@@ -15,7 +15,7 @@
 
 The parts of the product, and how a campaign moves through them — from intake to a scheduled, dual-approved plan that actually publishes. Two things hold everywhere in this architecture, not just in the component that first checks them: **nothing is scheduled or published without both internal and client approval currently recorded**, and **nothing is drafted that breaks a rule** — both enforced in application code, never in a prompt.
 
-An account manager submits a campaign brief — or converts a client's own calendar request — for a client operating in a single market (Saudi Arabia, to start). The system looks up that client's rules, resolves upcoming occasions relevant to their market, and drafts a full multi-form content plan: posts, images, videos, reels, and photoshoot briefs, each grounded in the specific rule it was written under. An assigned creator refines it, an internal reviewer approves it, the client gives final sign-off, and only then is anything scheduled — and only then does a scheduler actually publish it to the client's connected Instagram account. Either the reviewer or the client can pull an item back even after approving it, right up until it goes live. Performance metrics flow back in once a post is published, visible to the account manager and the client.
+An account manager submits a campaign brief — or converts a client's own calendar request — for a client operating in one or both of the seeded markets (Egypt and Saudi Arabia). The system looks up that client's rules, resolves upcoming occasions across every market that client operates in, and drafts a full multi-form content plan: posts, images, videos, reels, and photoshoot briefs, each grounded in the specific rule it was written under. An assigned creator refines it, an internal reviewer approves it, the client gives final sign-off, and only then is anything scheduled — and only then does a scheduler actually publish it to the client's connected Instagram account. Either the reviewer or the client can pull an item back even after approving it, right up until it goes live. Performance metrics flow back in once a post is published, visible to the account manager and the client.
 
 ---
 
@@ -25,7 +25,7 @@ An account manager submits a campaign brief — or converts a client's own calen
 |---|---|
 | **Campaign Intake** | Accepts a brief through a form, an incoming queue, or a converted client `PostRequest`; normalizes it into a structured object the engine can use. |
 | **Guarded Content Engine** | The guarded pipeline that turns a brief into a drafted, cited, multi-form plan — or a request, a flag, or a refusal. Also exposes a narrower, item-level regeneration path a content creator can prompt directly, with the same grounding discipline. |
-| **Client Roster Store** | The client roster: status, channels, market, governing brand guide, account manager. Account managers create clients directly here. |
+| **Client Roster Store** | The client roster: status, channels, markets (one or both), governing brand guide, account manager. Account managers create clients directly here. |
 | **Guideline & Brand Guide Store** | Agency standards plus each client's versioned brand guide, retrieved per-request — never held in the model's memory. |
 | **Occasion Calendar Store** | Seeded regional and local occasions, scoped by market, Hijri-aware for dates that move year to year. |
 | **Campaign & Content Store** | Transactional data: campaigns, content items, media assets, citations, approvals, flags, platform connections, metrics, post requests, comments, audit log. |
@@ -45,7 +45,7 @@ An account manager submits a campaign brief — or converts a client's own calen
 
 ```mermaid
 flowchart TB
-    AM[Account Manager] -->|creates client incl. market| ROSTER
+    AM[Account Manager] -->|creates client incl. markets| ROSTER
     AM -->|submits brief| INTAKE[Campaign Intake]
     CLIENT_USER[Client] -->|PostRequest + comments| DASH[Client Dashboard]
     DASH --> DATA
@@ -91,9 +91,9 @@ For every brief, the engine runs a fixed sequence — retrieval and rule-checkin
 flowchart TD
     A[analyze_brief] --> B[lookup_client]
     B -->|unknown / inactive| F1["FLAG - Clause 0.6, no draft"]
-    B -->|resolved, incl. market_id| C{Required fields present?}
+    B -->|resolved, incl. markets| C{Required fields present?}
     C -->|missing| RI["REQUEST_INFO - Clause 0.5"]
-    C -->|complete| D["resolve_calendar - client.market_id to upcoming Occasions"]
+    C -->|complete| D["resolve_calendar - all client markets to upcoming Occasions, shared ones collapsed"]
     D --> E[search_guidelines - scoped to this client plus agency standards]
     E --> G["generate_plan - multi-form: post / image brief / video script / reel concept / photoshoot brief, occasion-aware"]
     G --> H[queue_or_flag]
@@ -103,7 +103,9 @@ flowchart TD
     I -->|unsubstantiated superlative| L[REQUEST_INFO for that claim]
 ```
 
-`resolve_calendar` pulls `Occasion` rows for the client's `market_id` within the campaign's planning window, resolving Hijri-based occasions (Ramadan, Eid al-Fitr, Eid al-Adha) against the seeded `OccasionDate` table rather than computing them live. `generate_plan` receives this as context so its proposed `scheduled_date`s and content angles can reference real upcoming dates — but the engine only proposes; nothing is actually scheduled without the same approval gate as everything else.
+`resolve_calendar` pulls `Occasion` rows for **every market the client operates in** (via `ClientMarket`) within the campaign's planning window, resolving Hijri-based occasions (Ramadan, Eid al-Fitr, Eid al-Adha) against the seeded `OccasionDate` table rather than computing them live. Occasions sharing a `shared_key` across markets — Ramadan and the two Eids — are collapsed into one entry carrying each market's resolved date, so a dual-market client gets one Ramadan item rather than two near-duplicates. Occasions without a `shared_key` — Egypt's Revolution Day, Saudi Arabia's National Day — stay market-specific.
+
+`generate_plan` receives this as context and tags each produced item accordingly: an item written around a market-specific occasion carries that `market_id`, while an evergreen or shared-occasion item carries `market_id = null` and is produced once. A market-tagged item schedules against its own market's resolved date. The engine only proposes; nothing is actually scheduled without the same approval gate as everything else, and a dual-market plan is approved item by item like any other.
 
 `search_guidelines` is retrieval-scoped: a request can only return the requesting client's own active brand guide version plus the agency standards handbook. It is architecturally impossible for one client's rules — or content — to leak into another client's retrieval or drafting.
 
@@ -215,7 +217,7 @@ flowchart LR
 
 | Role | Capabilities |
 |---|---|
-| **Account Manager** | Creates clients directly, including market; submits briefs; is the internal reviewer by default; connects and manages a client's `PlatformConnection`; converts a `PostRequest` into a real `Campaign`; can late-revoke on any of their clients' approved or scheduled items. |
+| **Account Manager** | Creates clients directly, including which market(s) they operate in; submits briefs; is the internal reviewer by default; connects and manages a client's `PlatformConnection`; converts a `PostRequest` into a real `Campaign`; can late-revoke on any of their clients' approved or scheduled items. |
 | **Content Creator** *(includes Marketing Specialist)* | Authors the full multi-form plan — post, image, video, reel, and photoshoot briefs; has calendar and occasion visibility; refines drafts before internal review; attaches image or PDF/doc reference material when prompting generation or regeneration of a specific item. Does not trigger publish directly — staging only; scheduling stays gate-controlled regardless of who staged the work. |
 | **Content Lead** | When assigned in place of the account manager, acts as the internal reviewer for that client, with the same late-revoke power. |
 | **Client** | Sees their assigned account manager; requests or reschedules posts and comments through the dashboard; gives final approval on content and on brand guide changes; can late-revoke their own approval on an approved or scheduled item; views analytics on their own data only. |
@@ -229,7 +231,8 @@ flowchart LR
 
 | Decision | Choice | Why |
 |---|---|---|
-| Market | A real table, single-select per client, seeded with one row (Saudi Arabia) | A second market later is a data insert, not a migration; no sub-national region is modeled for now |
+| Market | A real table, seeded with two rows (Egypt, Saudi Arabia); a client operates in one or both via `ClientMarket` | Egypt is what the seeded roster and brand guides are written for; Saudi Arabia alongside it makes the multi-market path demonstrable. A third market is a data insert, not a migration; no sub-national region is modeled |
+| Dual-market plans | One campaign, items tagged per market — `ContentItem.market_id` nullable | Keeps one brief, one review pass, one approval gate; avoids duplicating evergreen content per market while still letting a national-day item schedule on the right date |
 | Hijri-calendar occasions | Seeded per-year lookup table | No external calendar-conversion dependency; documented as needing yearly reseeding |
 | Trends | Agency-curated internal signal | No accessible third-party trends endpoint on Instagram's API |
 | Photoshoots | Planning artifact, not a generated asset | No API produces a real-world shoot |

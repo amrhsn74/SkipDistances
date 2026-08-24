@@ -84,12 +84,12 @@ If any of these don't match what you want, say so before Phase 1 — the whole s
   - [x] `P2.7a` — Legal forward transitions (drafted → … → published).
   - [x] `P2.7b` — Reset-on-edit: content edit or `scheduled_date` change at `internal_approved` or later → `drafted`.
   - [x] `P2.7c` — Reset-on-decline, symmetric: either `internal` or `client` stage decline, at `pending_*_review`, `internal_approved`, `client_approved`, or `scheduled` → `drafted`. Not legal at `publishing`/`published`.
-- [ ] `P2.8` — `lib/domain/gate.ts`: `canSchedule(contentItemId)` — reads the **most recent** `Approval` row per `(contentItemId, stage)`, returns true only if both are currently `approve`. This is the function the whole assignment is graded on; give it the most thorough test file in the project:
-  - [ ] both approved → true
-  - [ ] one declined → false
-  - [ ] approved then later declined (same stage) → false (proves most-recent-per-stage, not any-ever)
-  - [ ] declined then later re-approved → true
-  - [ ] no rows at all → false
+- [x] `P2.8` — `lib/domain/gate.ts`: `canSchedule(contentItemId)` — reads the **most recent** `Approval` row per `(contentItemId, stage)`, returns true only if both are currently `approve`. This is the function the whole assignment is graded on; give it the most thorough test file in the project:
+  - [x] both approved → true
+  - [x] one declined → false
+  - [x] approved then later declined (same stage) → false (proves most-recent-per-stage, not any-ever)
+  - [x] declined then later re-approved → true
+  - [x] no rows at all → false
 - [ ] `P2.9` — `lib/domain/clientContactInvariant.ts`: enforce that a User assigned `role_on_client = client_approver` has at most one `ClientAssignment` row ever (the ERD's unique constraint is on the assignment role — `client_contact` is the `user_type`; don't conflate them or the test asserts nothing). Unit test: second assignment attempt throws/rejects.
 - [ ] `P2.10` — `lib/domain/overrideDetection.ts`: simple pattern check on brief text for bypass language ("skip review", "already approved", "pre-approved", "trust me") → sets `override_attempt_detected`, does not block drafting. Unit test against B-024/B-025-style text.
 

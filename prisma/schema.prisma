@@ -31,8 +31,16 @@ model User {
 
   created_at DateTime @default(now())
 
-  assignments       ClientAssignment[]
-  managed_clients   Client[]           @relation("AccountManager")
+  assignments         ClientAssignment[]
+  managed_clients     Client[]              @relation("AccountManager")
+  submitted_campaigns Campaign[]            @relation("SubmittedCampaigns")
+  approval_decisions  Approval[]            @relation("ApprovalDecisions")
+  platform_connections PlatformConnection[] @relation("PlatformConnections")
+  post_requests       PostRequest[]         @relation("PostRequests")
+  authored_comments   Comment[]             @relation("AuthoredComments")
+  audit_entries       AuditLog[]            @relation("AuditEntries")
+  uploaded_media      MediaAsset[]          @relation("UploadedMedia")
+  uploaded_references ReferenceAttachment[] @relation("UploadedReferences")
 
   @@index([user_type])
 }
@@ -79,14 +87,23 @@ model Client {
   /// a brand guide. A client with none is governed by agency clauses alone.
   active_brand_guide_id String?
 
+  /// Derived from industry (healthcare / financial / government) per Clause 1.8.
+  /// Denormalized so the operational summary can filter on it without
+  /// recomputing across the roster; written only by lib/domain/sensitiveSector.ts
+  /// so the derivation has one source of truth.
+  sensitive_sector Boolean @default(false)
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   account_manager User?   @relation("AccountManager", fields: [account_manager_id], references: [user_id], onDelete: SetNull)
 
-  markets            ClientMarket[]
-  assignments        ClientAssignment[]
+  markets              ClientMarket[]
+  assignments          ClientAssignment[]
   brand_guide_versions BrandGuideVersion[]
+  campaigns            Campaign[]
+  platform_connections PlatformConnection[]
+  post_requests        PostRequest[]
 
   @@index([status])
   @@index([account_manager_id])
@@ -101,8 +118,9 @@ model Market {
   /// informational -- e.g. "gregorian_and_hijri"
   calendar_system String
 
-  clients   ClientMarket[]
-  occasions Occasion[]
+  clients       ClientMarket[]
+  occasions     Occasion[]
+  content_items ContentItem[]
 }
 
 /// Which markets a client operates in. The account manager picks one or both
@@ -195,8 +213,9 @@ model Occasion {
   /// near-duplicates. National days have no shared_key and stay market-specific.
   shared_key String?
 
-  market Market         @relation(fields: [market_id], references: [market_id], onDelete: Cascade)
-  dates  OccasionDate[]
+  market    Market         @relation(fields: [market_id], references: [market_id], onDelete: Cascade)
+  dates     OccasionDate[]
+  campaigns Campaign[]
 
   @@index([market_id])
   @@index([shared_key])
@@ -217,4 +236,362 @@ model OccasionDate {
 
   @@unique([occasion_id, year])
   @@index([year])
+}
+
+// ---------------------------------------------------------------------------
+// Campaigns & content
+// ---------------------------------------------------------------------------
+
+/// The brief, and the campaign it becomes.
+model Campaign {
+  campaign_id String @id @default(cuid())
+  client_id   String
+
+  title          String
+  objective      String?
+  audience       String?
+  /// JSON-encoded string[]
+  channels       String?
+  raw_brief_text String
+
+  /// Set when built around a specific upcoming occasion.
+  related_occasion_id String?
+  submitted_by_id     String?
+
+  /// received | info_requested | in_progress | complete
+  status String @default("received")
+
+  /// True if the brief tried to skip or fake approval (Clause 0.2/0.3).
+  /// Recorded, never obeyed -- and never a reason to refuse drafting outright.
+  override_attempt_detected Boolean @default(false)
+  /// True for sensitive-sector clients (Clause 1.8), even on an otherwise
+  /// clean brief.
+  compliance_review_required Boolean @default(false)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  client           Client    @relation(fields: [client_id], references: [client_id], onDelete: Cascade)
+  related_occasion Occasion? @relation(fields: [related_occasion_id], references: [occasion_id], onDelete: SetNull)
+  submitted_by     User?     @relation("SubmittedCampaigns", fields: [submitted_by_id], references: [user_id], onDelete: SetNull)
+
+  content_items ContentItem[]
+  flags         Flag[]
+
+  @@index([client_id, status])
+  @@index([status])
+}
+
+/// One row per drafted deliverable. A brief produces a separate record per
+/// deliverable and per form -- a caption, an image brief and a reel concept are
+/// each their own item, each carrying its own status and approval (PRD §6).
+model ContentItem {
+  content_item_id String @id @default(cuid())
+  campaign_id     String
+
+  /// post | image | video | reel | photoshoot | email | blog_post | ad_copy |
+  /// hashtag_set | cta | creative_prompt
+  content_form String
+  /// instagram | tiktok | facebook | linkedin | email
+  platform     String?
+
+  /// Current draft text. Visual/video forms carry their content via linked
+  /// MediaAsset rows instead.
+  content_body String?
+
+  /// Null = market-neutral (evergreen, or an occasion shared across markets):
+  /// produced once. Set = written for that one market's occasion and scheduled
+  /// against that market's date. Must be a market the client operates in --
+  /// enforced in the domain layer, not by the DB.
+  market_id String?
+
+  /// Target/proposed publish date -- distinct from the `scheduled` status.
+  scheduled_date DateTime?
+
+  /// drafted | in_refinement | pending_internal_review | internal_approved |
+  /// pending_client_review | client_approved | scheduled | declined | flagged |
+  /// publishing | published | publish_failed
+  status String @default("drafted")
+
+  /// Primary rule broken, if flagged.
+  flagged_clause_id String?
+  /// Self-reference for A/B variants.
+  parent_content_item_id String?
+  /// Version active at draft time -- frozen even if the guide is edited later.
+  grounded_brand_guide_version_id String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  campaign Campaign @relation(fields: [campaign_id], references: [campaign_id], onDelete: Cascade)
+  market   Market?  @relation(fields: [market_id], references: [market_id], onDelete: SetNull)
+
+  parent   ContentItem?  @relation("ABVariant", fields: [parent_content_item_id], references: [content_item_id], onDelete: SetNull)
+  variants ContentItem[] @relation("ABVariant")
+
+  citations   ContentItemCitation[]
+  media       MediaAsset[]
+  references  ReferenceAttachment[]
+  metrics     MetricSnapshot[]
+  comments    Comment[]
+
+  @@index([campaign_id, status])
+  @@index([status, scheduled_date])
+  @@index([market_id])
+}
+
+/// Every drafted item can be grounded in more than one clause -- an agency
+/// clause and a brand rule together.
+model ContentItemCitation {
+  citation_id     String @id @default(cuid())
+  content_item_id String
+  clause_id       String
+
+  content_item ContentItem @relation(fields: [content_item_id], references: [content_item_id], onDelete: Cascade)
+
+  @@unique([content_item_id, clause_id])
+  @@index([content_item_id])
+  @@index([clause_id])
+}
+
+/// Generated or uploaded images and video. A photoshoot's output is always
+/// uploaded -- no API produces a real-world shoot (architecture §10).
+model MediaAsset {
+  media_asset_id  String @id @default(cuid())
+  content_item_id String
+
+  /// image | video
+  asset_type        String
+  /// ai_generated | uploaded
+  generation_source String
+  storage_url       String
+  format            String?
+  created_by_id     String?
+
+  created_at DateTime @default(now())
+
+  content_item ContentItem @relation(fields: [content_item_id], references: [content_item_id], onDelete: Cascade)
+  created_by   User?       @relation("UploadedMedia", fields: [created_by_id], references: [user_id], onDelete: SetNull)
+
+  @@index([content_item_id])
+}
+
+/// Reference material a creator supplies when prompting generation or
+/// regeneration of one item. Rows accumulate across regenerations rather than
+/// being overwritten, so a reviewer can see which reference produced which
+/// version.
+///
+/// Carries no authority over compliance, the same as brief wording and comments:
+/// a competitor screenshot attached as "make it look like this" still cannot
+/// produce disparaging content.
+model ReferenceAttachment {
+  attachment_id   String @id @default(cuid())
+  content_item_id String
+  /// Must resolve to role_on_client = content_creator -- enforced in the
+  /// domain layer.
+  uploaded_by_id  String?
+
+  /// image | pdf | doc -- no video (PRD §4, out of scope)
+  file_type   String
+  storage_url String
+  /// Optional text accompanying the file, e.g. "match this angle".
+  instruction String?
+
+  created_at DateTime @default(now())
+
+  content_item ContentItem @relation(fields: [content_item_id], references: [content_item_id], onDelete: Cascade)
+  uploaded_by  User?       @relation("UploadedReferences", fields: [uploaded_by_id], references: [user_id], onDelete: SetNull)
+
+  @@index([content_item_id])
+}
+
+// ---------------------------------------------------------------------------
+// Review & compliance
+// ---------------------------------------------------------------------------
+
+/// One record per decision, per item, per stage.
+///
+/// The gate reads the MOST RECENT row per (content_item_id, stage) -- not
+/// whether an approval exists anywhere in history. That is what lets a reviewer
+/// or client decline something they already approved. Rows are never updated or
+/// deleted; a reversal is a new row.
+model Approval {
+  approval_id     String @id @default(cuid())
+  content_item_id String
+
+  /// internal | client
+  stage    String
+  /// approve | decline -- an approval that requests a change is a decline
+  decision String
+  /// Required if decline, optional if approve (PRD §6) -- enforced in the
+  /// domain layer.
+  comment  String?
+
+  decided_by_id String?
+  decided_at    DateTime @default(now())
+
+  /// Groups rows created by one "approve whole plan" click. The shortcut is a
+  /// grouping label, not a different underlying record (PRD §6).
+  bulk_action_id String?
+
+  decided_by User? @relation("ApprovalDecisions", fields: [decided_by_id], references: [user_id], onDelete: SetNull)
+
+  // The gate's read path: latest row for one item+stage.
+  @@index([content_item_id, stage, decided_at])
+  @@index([bulk_action_id])
+}
+
+/// Anything routed to a human instead of drafted or scheduled.
+model Flag {
+  flag_id         String  @id @default(cuid())
+  campaign_id     String?
+  /// Null content_item_id = brief-level flag.
+  content_item_id String?
+  /// The rule broken.
+  clause_id       String?
+
+  /// brand_violation | compliance_violation | unknown_client | inactive_client |
+  /// cross_client_data | approval_override_attempt
+  flag_type String
+
+  resolved         Boolean   @default(false)
+  resolution_notes String?
+  resolved_at      DateTime?
+
+  created_at DateTime @default(now())
+
+  campaign Campaign? @relation(fields: [campaign_id], references: [campaign_id], onDelete: Cascade)
+
+  @@index([campaign_id])
+  @@index([content_item_id])
+  @@index([resolved])
+}
+
+/// Append-only. Never updated, never deleted.
+model AuditLog {
+  audit_id    String @id @default(cuid())
+  entity_type String
+  entity_id   String
+  /// created | edited | scheduled | rescheduled | deleted | approved |
+  /// declined | flag_raised | flag_resolved | published | take_down
+  action      String
+  /// Free-form JSON context for the action.
+  details     String?
+
+  performed_by_id String?
+  performed_at    DateTime @default(now())
+
+  performed_by User? @relation("AuditEntries", fields: [performed_by_id], references: [user_id], onDelete: SetNull)
+
+  @@index([entity_type, entity_id])
+  @@index([performed_at])
+}
+
+// ---------------------------------------------------------------------------
+// Publishing & performance
+// ---------------------------------------------------------------------------
+
+/// A client's connected Instagram account. Credentials are staff-only, never
+/// exposed to a client contact -- a client can see that their account is
+/// connected, never the token itself.
+///
+/// No privacy field: Instagram Professional accounts cannot be private, so
+/// there is nothing to model.
+model PlatformConnection {
+  platform_connection_id String @id @default(cuid())
+  client_id              String
+
+  /// instagram (enum kept open for future platforms)
+  platform String @default("instagram")
+
+  /// Encrypted at rest -- never stored or logged in plaintext.
+  access_token       String
+  /// Instagram's own account id, safe to display.
+  platform_account_id String?
+  token_expires_at    DateTime?
+
+  /// connected | expired | disconnected
+  status String @default("connected")
+
+  /// Staff only.
+  connected_by_id String?
+  connected_at    DateTime @default(now())
+
+  client       Client @relation(fields: [client_id], references: [client_id], onDelete: Cascade)
+  connected_by User?  @relation("PlatformConnections", fields: [connected_by_id], references: [user_id], onDelete: SetNull)
+
+  @@index([client_id, status])
+}
+
+/// Time-series, not a single mutable row: one row per metric per poll, so
+/// performance is a history rather than an overwritten current value.
+model MetricSnapshot {
+  metric_snapshot_id String   @id @default(cuid())
+  content_item_id    String
+  captured_at        DateTime @default(now())
+  /// impressions | reach | likes | comments | shares | saves
+  metric_type        String
+  value              Int
+
+  content_item ContentItem @relation(fields: [content_item_id], references: [content_item_id], onDelete: Cascade)
+
+  @@index([content_item_id, metric_type, captured_at])
+}
+
+// ---------------------------------------------------------------------------
+// Client requests
+// ---------------------------------------------------------------------------
+
+/// The client-initiated calendar ask. Carries no authority: however detailed the
+/// client's comment, it is a front door into the same pipeline, not a bypass.
+/// It cannot become a scheduled item without an account manager deliberately
+/// converting it into a real Campaign and the full engine and gate running.
+model PostRequest {
+  post_request_id String @id @default(cuid())
+  client_id       String
+  requested_by_id String?
+
+  /// The calendar day being asked for.
+  requested_date DateTime
+  /// Set for "change/reschedule this existing post".
+  related_content_item_id String?
+
+  /// new | under_review | converted | declined
+  status String @default("new")
+  /// Set once converted into a real brief.
+  linked_campaign_id String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  client       Client @relation(fields: [client_id], references: [client_id], onDelete: Cascade)
+  requested_by User?  @relation("PostRequests", fields: [requested_by_id], references: [user_id], onDelete: SetNull)
+
+  comments Comment[]
+
+  @@index([client_id, status])
+}
+
+/// Discussion thread, distinct from Approval.comment.
+///
+/// A Comment NEVER triggers an approval reset -- only a formal Approval decline
+/// or a deliberate edit does. This keeps the gate from being eroded by informal
+/// wording (architecture §10).
+model Comment {
+  comment_id String @id @default(cuid())
+  /// Exactly one of these two is set -- enforced in the domain layer.
+  post_request_id String?
+  content_item_id String?
+
+  author_id String?
+  body      String
+
+  created_at DateTime @default(now())
+
+  post_request PostRequest? @relation(fields: [post_request_id], references: [post_request_id], onDelete: Cascade)
+  content_item ContentItem? @relation(fields: [content_item_id], references: [content_item_id], onDelete: Cascade)
+  author       User?        @relation("AuthoredComments", fields: [author_id], references: [user_id], onDelete: SetNull)
+
+  @@index([post_request_id])
+  @@index([content_item_id])
 }

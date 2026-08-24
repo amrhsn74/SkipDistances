@@ -204,6 +204,7 @@ The things the product stores: clients and the market they operate in, the peopl
 |---|---|
 | `audit_id` PK | |
 | `entity_type`, `entity_id`, `action` | created \| edited \| scheduled \| rescheduled \| deleted \| approved \| declined \| flag_raised \| flag_resolved \| published \| take_down |
+| `details`, nullable | free-form JSON context for the action — what changed, and from what to what |
 | `performed_by_id` FK → User, `performed_at` | |
 
 ### Publishing & performance
@@ -214,9 +215,11 @@ The things the product stores: clients and the market they operate in, the peopl
 | `platform_connection_id` PK | |
 | `client_id` FK → Client | |
 | `platform` | instagram (enum kept open for future platforms) |
-| `access_token` | encrypted at rest |
+| `access_token` | encrypted at rest — never stored or logged in plaintext |
+| `platform_account_id`, nullable | Instagram's own account id; safe to display to a client, unlike the token |
+| `token_expires_at`, nullable | drives the `expired` status |
 | `status` | connected \| expired \| disconnected |
-| `connected_by_id` FK → User | staff only |
+| `connected_by_id` FK → User, `connected_at` | staff only |
 
 > No privacy field — Instagram Professional accounts cannot be private, so there is nothing to model.
 

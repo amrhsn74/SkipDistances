@@ -1,3 +1,125 @@
 {
-  "extends": ["next/core-web-vitals", "next/typescript"]
+  "extends": "next/core-web-vitals",
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": [
+              "**/generated/prisma/**"
+            ],
+            "message": "Import the shared client from lib/db instead of the generated client directly."
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "lib/db.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    },
+    {
+      "files": [
+        "lib/domain/**/*.ts"
+      ],
+      "excludedFiles": [
+        "lib/domain/**/*.test.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "**/engine/**",
+                  "**/llm/**",
+                  "@/app/**",
+                  "**/app/**",
+                  "next/**",
+                  "react",
+                  "react-dom",
+                  "@google/genai",
+                  "@google/genai/**"
+                ],
+                "message": "lib/domain must stay pure: no engine, LLM SDK, Next or React imports. Rules that must never be wrong stay unit-testable without a network."
+              },
+              {
+                "group": [
+                  "**/generated/prisma/**"
+                ],
+                "message": "Import the shared client from lib/db instead of the generated client directly."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "lib/engine/**/*.ts"
+      ],
+      "excludedFiles": [
+        "lib/engine/**/*.test.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/app/**",
+                  "**/app/**",
+                  "next/**",
+                  "react",
+                  "react-dom"
+                ],
+                "message": "lib/engine must not import from the presentation layer. Dependencies point inward."
+              },
+              {
+                "group": [
+                  "@google/genai",
+                  "@google/genai/**"
+                ],
+                "message": "Call Gemini through lib/llm/gemini.ts, not the SDK directly -- one chokepoint for model config and error handling."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "lib/llm/**/*.ts"
+      ],
+      "excludedFiles": [
+        "lib/llm/**/*.test.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "**/domain/**",
+                  "**/engine/**",
+                  "@/app/**",
+                  "**/app/**"
+                ],
+                "message": "lib/llm is a leaf: it must not depend on domain, engine, or the UI."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

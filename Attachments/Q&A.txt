@@ -1,0 +1,61 @@
+Q&A
+
+Questions:
+
+1. what channels to communicate with client?
+
+2. could the client add comments with decline?
+
+3. could the client add comments with approval? and if, does it require another approval?
+
+4. who should approve internally?
+
+5. for posting, should it be done using client's business account directly? or post for client as an admin?
+
+6. what should happen for declined posts?
+
+7. who does have the access for drafted/scheduled posts?
+
+8. what should happen for posts that run out scheduled time without approving?
+
+9. who can edit (schedule & post), or delete a scheduled post after approval? does it have a second approval cycle?
+
+10. should it send a reminder for either internal approver or client to respond?
+
+11. who should assign roles and permissions on a campaign/client?
+
+12. for every post, should it be connected to a specific campaign?
+
+13. to initiate a post, should it be connected to client first?
+
+14. can user generate a caption before or without client intake?
+
+15. are there any tools should be integrated with?
+
+16. who can change a brand's rule? does it need an approval?
+
+17. is approval granted per individual post, or per the whole campaign's content plan at once?
+
+18. when something gets flagged (off-brand, non-compliant), can the account manager edit and resubmit that specific item, or does the whole brief go back to intake?
+
+
+Answers:
+
+1. There's no real messaging in scope. "Client approval" happens on your own review screen, not WhatsApp or email.
+2. Your design and yes, add it. Only requirement: a declined item goes back for revision.
+3. A comment is fine. If the "approval" actually asks for a change, treat it as a change and send it back through the gate. A plain "looks great" restarts nothing.
+4. The internal reviewer the account manager or a content lead. Role name is yours; an internal approval before the client sees it is required.
+5. Neither. No real publishing in scope. "Scheduled" just shows in your own store on screen.
+6. Not scheduled. Back to draft, revise, re-run through review and client approval.
+7. The client's own account team plus the client. Don't show one client's content to another (Clause 0.7).
+8. They never become "scheduled" nothing auto-publishes. Keep them as awaiting approval and surface them in your summary.
+9. A real edit is a change back through both approvals before it can reschedule. Delete is internal, no client approval, but log who did it.
+10. Not required. Stretch, not graded. Your summary already shows what's "in review" and "awaiting client."
+11. Your design keep it light. Lean on the account_manager already in the roster; don't build user management.
+12. Yes. Every item is produced from a brief, so it belongs to that campaign. Show that link in your ERD.
+13. Yes. No content for unknown or inactive clients (Clause 0.6). Client first, always.
+14. No. Every piece is grounded in that client's brand guide, no client, nothing to ground in.
+15. None. No social platforms, no image/video gen, no analytics, all out of scope. Use the data files and your own store.
+16. Editing the guide is your design. The graded part: change a rule and the output must change with it.
+17. Your call. Approving the plan as a unit is the natural default. Either way, every item must carry its own status.
+18. Just that item, with the rule it breaks. Fix and re-run it. The whole brief only restarts if it's incomplete (that's REQUEST_INFO).

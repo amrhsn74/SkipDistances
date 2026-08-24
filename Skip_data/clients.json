@@ -1,0 +1,1948 @@
+[
+  {
+    "client_id": "CL-101",
+    "name": "NileFit",
+    "industry": "fitness",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "instagram",
+      "tiktok",
+      "facebook"
+    ],
+    "brand_guide": "10_brand_nilefit.md",
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-102",
+    "name": "Cairo Roast",
+    "industry": "food & beverage",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "instagram",
+      "facebook"
+    ],
+    "brand_guide": "11_brand_cairoroast.md",
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-103",
+    "name": "MedCare Clinics",
+    "industry": "healthcare",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "facebook",
+      "linkedin"
+    ],
+    "brand_guide": "12_brand_medcare.md",
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-104",
+    "name": "NileBank",
+    "industry": "financial services",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "linkedin",
+      "facebook",
+      "instagram"
+    ],
+    "brand_guide": "13_brand_nilebank.md",
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-105",
+    "name": "Layla Fashion",
+    "industry": "fashion retail",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "instagram",
+      "tiktok"
+    ],
+    "brand_guide": "14_brand_layla.md",
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-106",
+    "name": "TechNova",
+    "industry": "b2b software",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "linkedin"
+    ],
+    "brand_guide": "15_brand_technova.md",
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-107",
+    "name": "GreenGrocer",
+    "industry": "food delivery",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "instagram",
+      "facebook"
+    ],
+    "brand_guide": "16_brand_greengrocer.md",
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-108",
+    "name": "StayEasy Hotels",
+    "industry": "hospitality",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "instagram",
+      "facebook"
+    ],
+    "brand_guide": "17_brand_stayeasy.md",
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-109",
+    "name": "Pyramide Motors",
+    "industry": "automotive",
+    "status": "inactive",
+    "tier": "former",
+    "channels": [
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": null
+  },
+  {
+    "client_id": "CL-110",
+    "name": "Nile Retail",
+    "industry": "retail",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "email",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-111",
+    "name": "Zenith Foods",
+    "industry": "beauty",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "email"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-112",
+    "name": "Aurora Retail",
+    "industry": "education",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "email"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-113",
+    "name": "Cairo Studios",
+    "industry": "logistics",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "facebook",
+      "email"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-114",
+    "name": "Ivory Wear",
+    "industry": "events",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "email",
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-115",
+    "name": "Lotus Works",
+    "industry": "fitness",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "facebook",
+      "email",
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-116",
+    "name": "Cairo Care",
+    "industry": "f&b",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-117",
+    "name": "Giza Studios",
+    "industry": "events",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "email",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-118",
+    "name": "Cairo Living",
+    "industry": "f&b",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "facebook",
+      "tiktok",
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-119",
+    "name": "Ivory Retail",
+    "industry": "fitness",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "facebook",
+      "instagram",
+      "email"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-120",
+    "name": "Oasis Studios",
+    "industry": "retail",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-121",
+    "name": "Amber Studios",
+    "industry": "logistics",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "instagram",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-122",
+    "name": "Giza Travel",
+    "industry": "logistics",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "linkedin",
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-123",
+    "name": "Nile Foods",
+    "industry": "education",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "facebook",
+      "email",
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-124",
+    "name": "Giza Group",
+    "industry": "retail",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "linkedin",
+      "facebook",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-125",
+    "name": "Delta Works",
+    "industry": "logistics",
+    "status": "inactive",
+    "tier": "project",
+    "channels": [
+      "linkedin",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-126",
+    "name": "Ivory Homes",
+    "industry": "retail",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-127",
+    "name": "Falcon Works",
+    "industry": "travel",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "instagram",
+      "tiktok",
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-128",
+    "name": "Delta Foods",
+    "industry": "f&b",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "tiktok",
+      "instagram",
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-129",
+    "name": "Aurora Group",
+    "industry": "travel",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-130",
+    "name": "Zenith Labs",
+    "industry": "education",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "linkedin",
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-131",
+    "name": "Falcon Living",
+    "industry": "beauty",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-132",
+    "name": "Aurora Care",
+    "industry": "fitness",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "tiktok",
+      "linkedin",
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-133",
+    "name": "Nile Wear",
+    "industry": "real estate",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "linkedin",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-134",
+    "name": "Nile Works",
+    "industry": "education",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "facebook",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-135",
+    "name": "Ivory Travel",
+    "industry": "education",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "instagram",
+      "email"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-136",
+    "name": "Ivory Care",
+    "industry": "fitness",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-137",
+    "name": "Cairo Media",
+    "industry": "real estate",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "email",
+      "linkedin",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-138",
+    "name": "Ivory Works",
+    "industry": "events",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-139",
+    "name": "Lotus Media",
+    "industry": "real estate",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "tiktok",
+      "instagram",
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-140",
+    "name": "Lotus Wear",
+    "industry": "education",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-141",
+    "name": "Ivory Foods",
+    "industry": "f&b",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "email",
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-142",
+    "name": "Zenith Living",
+    "industry": "fitness",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "tiktok",
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-143",
+    "name": "Giza Wear",
+    "industry": "logistics",
+    "status": "inactive",
+    "tier": "retainer",
+    "channels": [
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-144",
+    "name": "Aurora Wear",
+    "industry": "travel",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "linkedin",
+      "tiktok",
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-145",
+    "name": "Nile Travel",
+    "industry": "real estate",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "linkedin",
+      "instagram",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-146",
+    "name": "Amber Labs",
+    "industry": "events",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-147",
+    "name": "Giza Care",
+    "industry": "travel",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "instagram",
+      "linkedin",
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-148",
+    "name": "Zenith Care",
+    "industry": "beauty",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "instagram",
+      "linkedin",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-149",
+    "name": "Delta Labs",
+    "industry": "fitness",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "instagram",
+      "email"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-150",
+    "name": "Falcon Care",
+    "industry": "logistics",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "tiktok",
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-151",
+    "name": "Falcon Homes",
+    "industry": "beauty",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-152",
+    "name": "Falcon Group",
+    "industry": "education",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-153",
+    "name": "Delta Media",
+    "industry": "education",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "linkedin",
+      "instagram",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-154",
+    "name": "Nile Homes",
+    "industry": "events",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "instagram",
+      "facebook",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-155",
+    "name": "Amber Group",
+    "industry": "real estate",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-156",
+    "name": "Aurora Media",
+    "industry": "travel",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "linkedin",
+      "instagram",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-157",
+    "name": "Lotus Group",
+    "industry": "retail",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "email",
+      "linkedin",
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-158",
+    "name": "Delta Travel",
+    "industry": "electronics",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "email",
+      "instagram",
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-159",
+    "name": "Amber Retail",
+    "industry": "events",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-160",
+    "name": "Amber Homes",
+    "industry": "events",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "email",
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-161",
+    "name": "Zenith Group",
+    "industry": "education",
+    "status": "inactive",
+    "tier": "project",
+    "channels": [
+      "instagram",
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-162",
+    "name": "Sphinx Group",
+    "industry": "electronics",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-163",
+    "name": "Falcon Foods",
+    "industry": "electronics",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "instagram",
+      "facebook",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-164",
+    "name": "Delta Homes",
+    "industry": "electronics",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "instagram",
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-165",
+    "name": "Cairo Works",
+    "industry": "logistics",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "tiktok",
+      "email",
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-166",
+    "name": "Oasis Retail",
+    "industry": "travel",
+    "status": "inactive",
+    "tier": "project",
+    "channels": [
+      "linkedin",
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-167",
+    "name": "Delta Studios",
+    "industry": "retail",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-168",
+    "name": "Giza Living",
+    "industry": "real estate",
+    "status": "inactive",
+    "tier": "project",
+    "channels": [
+      "email",
+      "linkedin",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-169",
+    "name": "Ivory Living",
+    "industry": "travel",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-170",
+    "name": "Oasis Wear",
+    "industry": "retail",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-171",
+    "name": "Ivory Media",
+    "industry": "logistics",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "email"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-172",
+    "name": "Sphinx Care",
+    "industry": "real estate",
+    "status": "inactive",
+    "tier": "retainer",
+    "channels": [
+      "tiktok",
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-173",
+    "name": "Cairo Homes",
+    "industry": "logistics",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-174",
+    "name": "Delta Retail",
+    "industry": "retail",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-175",
+    "name": "Nile Group",
+    "industry": "electronics",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "tiktok",
+      "email",
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-176",
+    "name": "Zenith Travel",
+    "industry": "events",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "email",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-177",
+    "name": "Oasis Homes",
+    "industry": "travel",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "instagram",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-178",
+    "name": "Sphinx Homes",
+    "industry": "real estate",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-179",
+    "name": "Sphinx Retail",
+    "industry": "beauty",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-180",
+    "name": "Oasis Group",
+    "industry": "events",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-181",
+    "name": "Giza Retail",
+    "industry": "beauty",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-182",
+    "name": "Amber Living",
+    "industry": "f&b",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-183",
+    "name": "Sphinx Foods",
+    "industry": "retail",
+    "status": "inactive",
+    "tier": "retainer",
+    "channels": [
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-184",
+    "name": "Aurora Works",
+    "industry": "events",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "tiktok",
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-185",
+    "name": "Sphinx Living",
+    "industry": "retail",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-186",
+    "name": "Zenith Studios",
+    "industry": "retail",
+    "status": "inactive",
+    "tier": "project",
+    "channels": [
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-187",
+    "name": "Falcon Media",
+    "industry": "fitness",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "facebook",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-188",
+    "name": "Lotus Travel",
+    "industry": "electronics",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "tiktok",
+      "email"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-189",
+    "name": "Sphinx Labs",
+    "industry": "logistics",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-190",
+    "name": "Amber Media",
+    "industry": "travel",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "instagram",
+      "facebook",
+      "email"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-191",
+    "name": "Giza Works",
+    "industry": "education",
+    "status": "inactive",
+    "tier": "retainer",
+    "channels": [
+      "email",
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-192",
+    "name": "Lotus Homes",
+    "industry": "travel",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "email",
+      "tiktok",
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-193",
+    "name": "Cairo Group",
+    "industry": "real estate",
+    "status": "inactive",
+    "tier": "retainer",
+    "channels": [
+      "linkedin",
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-194",
+    "name": "Aurora Studios",
+    "industry": "logistics",
+    "status": "inactive",
+    "tier": "project",
+    "channels": [
+      "email"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-195",
+    "name": "Oasis Foods",
+    "industry": "logistics",
+    "status": "inactive",
+    "tier": "project",
+    "channels": [
+      "linkedin",
+      "instagram",
+      "email"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-196",
+    "name": "Falcon Labs",
+    "industry": "electronics",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "facebook",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-197",
+    "name": "Sphinx Studios",
+    "industry": "electronics",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "facebook",
+      "email",
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-198",
+    "name": "Ivory Studios",
+    "industry": "retail",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-199",
+    "name": "Giza Homes",
+    "industry": "education",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "email",
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-200",
+    "name": "Cairo Wear",
+    "industry": "real estate",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-201",
+    "name": "Delta Wear",
+    "industry": "fitness",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "linkedin",
+      "tiktok",
+      "email"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-202",
+    "name": "Ivory Group",
+    "industry": "events",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "email",
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-203",
+    "name": "Lotus Labs",
+    "industry": "retail",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "instagram",
+      "email",
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-204",
+    "name": "Aurora Labs",
+    "industry": "real estate",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "linkedin",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-205",
+    "name": "Amber Wear",
+    "industry": "travel",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "facebook",
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-206",
+    "name": "Cairo Labs",
+    "industry": "logistics",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "linkedin",
+      "facebook",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-207",
+    "name": "Aurora Travel",
+    "industry": "beauty",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "instagram",
+      "facebook",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-208",
+    "name": "Cairo Retail",
+    "industry": "events",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "instagram",
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-209",
+    "name": "Oasis Works",
+    "industry": "retail",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "tiktok",
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-210",
+    "name": "Lotus Care",
+    "industry": "education",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-211",
+    "name": "Amber Works",
+    "industry": "retail",
+    "status": "inactive",
+    "tier": "retainer",
+    "channels": [
+      "facebook",
+      "tiktok",
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-212",
+    "name": "Lotus Foods",
+    "industry": "electronics",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "linkedin",
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-213",
+    "name": "Zenith Homes",
+    "industry": "logistics",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "instagram",
+      "linkedin",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-214",
+    "name": "Amber Care",
+    "industry": "real estate",
+    "status": "inactive",
+    "tier": "project",
+    "channels": [
+      "tiktok",
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-215",
+    "name": "Cairo Foods",
+    "industry": "events",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "email"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-216",
+    "name": "Falcon Travel",
+    "industry": "logistics",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-217",
+    "name": "Delta Living",
+    "industry": "f&b",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "instagram",
+      "email"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-218",
+    "name": "Oasis Living",
+    "industry": "fitness",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "facebook",
+      "tiktok",
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-219",
+    "name": "Ivory Labs",
+    "industry": "travel",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "email",
+      "linkedin",
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-220",
+    "name": "Nile Studios",
+    "industry": "fitness",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "instagram",
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-221",
+    "name": "Nile Media",
+    "industry": "logistics",
+    "status": "inactive",
+    "tier": "project",
+    "channels": [
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-222",
+    "name": "Nile Labs",
+    "industry": "beauty",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-223",
+    "name": "Delta Group",
+    "industry": "electronics",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-224",
+    "name": "Cairo Travel",
+    "industry": "retail",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "tiktok",
+      "facebook",
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-225",
+    "name": "Nile Care",
+    "industry": "events",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "email",
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-226",
+    "name": "Aurora Foods",
+    "industry": "beauty",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-227",
+    "name": "Aurora Homes",
+    "industry": "events",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-228",
+    "name": "Giza Media",
+    "industry": "travel",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "tiktok",
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-229",
+    "name": "Aurora Living",
+    "industry": "education",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "instagram",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-230",
+    "name": "Oasis Media",
+    "industry": "beauty",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "tiktok",
+      "facebook",
+      "email"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-231",
+    "name": "Lotus Living",
+    "industry": "fitness",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "email",
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-232",
+    "name": "Falcon Wear",
+    "industry": "f&b",
+    "status": "inactive",
+    "tier": "retainer",
+    "channels": [
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-233",
+    "name": "Oasis Travel",
+    "industry": "retail",
+    "status": "inactive",
+    "tier": "project",
+    "channels": [
+      "facebook",
+      "instagram",
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-234",
+    "name": "Zenith Media",
+    "industry": "education",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "tiktok",
+      "facebook",
+      "email"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-235",
+    "name": "Amber Travel",
+    "industry": "retail",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-236",
+    "name": "Zenith Works",
+    "industry": "real estate",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "instagram",
+      "tiktok",
+      "email"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-237",
+    "name": "Falcon Studios",
+    "industry": "real estate",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "facebook",
+      "email",
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-238",
+    "name": "Sphinx Travel",
+    "industry": "retail",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "tiktok",
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-239",
+    "name": "Nile Living",
+    "industry": "education",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-240",
+    "name": "Oasis Care",
+    "industry": "electronics",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "tiktok",
+      "facebook",
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Omar Zaki"
+  },
+  {
+    "client_id": "CL-241",
+    "name": "Oasis Labs",
+    "industry": "events",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "tiktok"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-242",
+    "name": "Giza Labs",
+    "industry": "logistics",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "instagram",
+      "email"
+    ],
+    "brand_guide": null,
+    "account_manager": "Sara Selim"
+  },
+  {
+    "client_id": "CL-243",
+    "name": "Zenith Retail",
+    "industry": "fitness",
+    "status": "active",
+    "tier": "retainer",
+    "channels": [
+      "tiktok",
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Dina Sabry"
+  },
+  {
+    "client_id": "CL-244",
+    "name": "Amber Foods",
+    "industry": "beauty",
+    "status": "inactive",
+    "tier": "project",
+    "channels": [
+      "instagram",
+      "tiktok",
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-245",
+    "name": "Sphinx Works",
+    "industry": "logistics",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "linkedin",
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-246",
+    "name": "Lotus Retail",
+    "industry": "events",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "tiktok",
+      "email",
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-247",
+    "name": "Giza Foods",
+    "industry": "beauty",
+    "status": "inactive",
+    "tier": "project",
+    "channels": [
+      "linkedin",
+      "instagram"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-248",
+    "name": "Zenith Wear",
+    "industry": "electronics",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "linkedin"
+    ],
+    "brand_guide": null,
+    "account_manager": "Karim Nabil"
+  },
+  {
+    "client_id": "CL-249",
+    "name": "Falcon Retail",
+    "industry": "events",
+    "status": "inactive",
+    "tier": "project",
+    "channels": [
+      "tiktok",
+      "facebook"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  },
+  {
+    "client_id": "CL-250",
+    "name": "Sphinx Wear",
+    "industry": "electronics",
+    "status": "active",
+    "tier": "project",
+    "channels": [
+      "facebook",
+      "email"
+    ],
+    "brand_guide": null,
+    "account_manager": "Tarek Fahmy"
+  }
+]

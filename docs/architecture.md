@@ -161,7 +161,9 @@ stateDiagram-v2
     Published --> [*]: decline no longer applies, only a separate staff-only take-down action
 ```
 
-Decline is available at `pending_internal_review`/`pending_client_review` in the normal course of review, and remains available afterward — at `internal_approved`, `client_approved`, and `scheduled` — from either the internal reviewer/content lead or the client, so either party can pull back something they already signed off on. Any invalidation, whichever party or cause triggers it — a content edit, a `scheduled_date` change, or a late decline — produces the identical reset to `pending_internal_review`, unscheduling if scheduled. One rule, no per-cause branching.
+Decline is available at `pending_internal_review`/`pending_client_review` in the normal course of review, and remains available afterward — at `internal_approved`, `client_approved`, and `scheduled` — from either the internal reviewer/content lead or the client, so either party can pull back something they already signed off on. Any invalidation, whichever party or cause triggers it — a content edit, a `scheduled_date` change, or a late decline — produces the identical reset to `drafted`, unscheduling if scheduled. One rule, no per-cause branching.
+
+The reset target is `drafted`, not `pending_internal_review`: a declined item goes back to whoever is working on it to be fixed, and re-enters review only when someone deliberately resubmits it. Bouncing it straight into the reviewer's queue would put the same unchanged content back in front of the person who just rejected it. Both approval stages must then clear again from the start — an item that was `client_approved` does not keep its internal approval.
 
 A client `Comment` never triggers this. Comment is a discussion thread on a `PostRequest` or a `ContentItem`; only a formal `Approval` row with `decision = decline`, or a deliberate content/date edit by staff, invalidates approvals.
 

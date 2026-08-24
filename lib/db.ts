@@ -1,5 +1,5 @@
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaClient } from "./generated/prisma/client";
+import { PrismaClient, type Prisma } from "./generated/prisma/client";
 
 // Prisma 7 connects through an explicit driver adapter rather than an engine
 // binary, so the datasource URL is supplied here rather than in schema.prisma.
@@ -24,3 +24,17 @@ export const prisma = globalForPrisma.prisma ?? createClient();
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
+
+/**
+ * Re-exported so the rest of the codebase imports Prisma types from here rather
+ * than reaching into the generated client directly -- one import point, and the
+ * generated path stays an implementation detail of this file.
+ */
+export type { Prisma };
+
+/**
+ * Either the base client or a transaction client. A domain function that
+ * mutates state should accept this and pass its transaction down, so every
+ * write it triggers commits or rolls back together.
+ */
+export type Db = Prisma.TransactionClient | typeof prisma;

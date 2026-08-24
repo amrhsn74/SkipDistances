@@ -4,13 +4,12 @@ import path from "node:path";
 
 import { prisma } from "../lib/db";
 import {
-  parseGuidelineFile,
-  parseGuideHeading,
-  GUIDELINES_DIR,
-  DATA_DIR,
   AGENCY_STANDARDS_FILE,
-} from "./seed/parseGuidelines";
-import { isSensitiveSector } from "./seed/sensitiveSector";
+  CLIENTS_FILE,
+  GUIDELINES_DIR,
+} from "../lib/config/paths";
+import { parseGuidelineFile, parseGuideHeading } from "../lib/domain/parseGuidelines";
+import { isSensitiveSector } from "../lib/domain/sensitiveSector";
 
 type RosterClient = {
   client_id: string;
@@ -73,7 +72,7 @@ const OCCASIONS: Record<
 };
 
 /**
- * Hand-resolved Hijri dates, per architecture §10: a seeded lookup table rather
+ * Hand-resolved Hijri dates, per architecture §11: a seeded lookup table rather
  * than a live calendar-conversion dependency. Dates are the first day of the
  * observance.
  *
@@ -423,11 +422,10 @@ async function seedClients(
 // ---------------------------------------------------------------------------
 
 async function main() {
-  const rosterPath = path.join(DATA_DIR, "clients.json");
-  if (!fs.existsSync(rosterPath)) {
-    throw new Error(`Missing ${rosterPath} -- Skip_data/ must be present to seed.`);
+  if (!fs.existsSync(CLIENTS_FILE)) {
+    throw new Error(`Missing ${CLIENTS_FILE} -- data/ must be present to seed.`);
   }
-  const roster: RosterClient[] = JSON.parse(fs.readFileSync(rosterPath, "utf8"));
+  const roster: RosterClient[] = JSON.parse(fs.readFileSync(CLIENTS_FILE, "utf8"));
 
   console.log("Seeding Skip Studio...\n");
 

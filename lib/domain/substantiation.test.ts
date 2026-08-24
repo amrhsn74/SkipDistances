@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { loadBriefs, loadAnswerKey } from "../../fixtures/loadBriefs";
+import { loadBriefs, loadAnswerKey } from "../../tests/fixtures/loadBriefs";
 import {
   checkSubstantiation,
   findSuperlatives,

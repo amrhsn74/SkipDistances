@@ -1,12 +1,18 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { ANSWER_KEY_FILE, BRIEFS_DIR } from "../../lib/config/paths";
+
 /**
  * Loads the 27 evaluation briefs and their answer key.
  *
  * These are test fixtures, not seeded campaigns: the guarded engine is run
  * against them in Phase 3 (first pass) and Phase 12 (the graded evaluation),
  * so they stay as files rather than becoming rows.
+ *
+ * Read straight from data/ rather than a copy under tests/. A duplicated corpus
+ * drifts, and a fixture that disagrees with the data the engine is graded
+ * against is worse than no fixture.
  *
  * A brief is plain text with a "Key: value" header block:
  *
@@ -24,9 +30,7 @@ import path from "node:path";
  * doing it here would quietly pre-solve the thing the engine is graded on.
  */
 
-export const FIXTURES_DIR = __dirname;
-export const BRIEFS_DIR = path.join(FIXTURES_DIR, "briefs");
-export const ANSWER_KEY_FILE = path.join(FIXTURES_DIR, "answer_key.json");
+export { BRIEFS_DIR, ANSWER_KEY_FILE } from "../../lib/config/paths";
 
 export type Brief = {
   brief_id: string;

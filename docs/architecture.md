@@ -221,13 +221,43 @@ flowchart LR
 | **Content Creator** *(includes Marketing Specialist)* | Authors the full multi-form plan — post, image, video, reel, and photoshoot briefs; has calendar and occasion visibility; refines drafts before internal review; attaches image or PDF/doc reference material when prompting generation or regeneration of a specific item. Does not trigger publish directly — staging only; scheduling stays gate-controlled regardless of who staged the work. |
 | **Content Lead** | When assigned in place of the account manager, acts as the internal reviewer for that client, with the same late-revoke power. |
 | **Client** | Sees their assigned account manager; requests or reschedules posts and comments through the dashboard; gives final approval on content and on brand guide changes; can late-revoke their own approval on an approved or scheduled item; views analytics on their own data only. |
-| **Agency Admin** | Assigns each client's account manager, reviewer, and creators; a cross-client view of where every account stands; not involved in day-to-day content work. |
+| **Agency Admin** | Assigns each client's account manager, reviewer, and creators; a cross-client view of where every account stands; not involved in day-to-day content work. The accountability role — see §10. |
 
 `PlatformConnection` credentials are staff-only, never exposed to a client contact — a client can see that their account is connected, never the token itself.
 
+Every capability in this table is expressed once, in `lib/domain/permissions.ts`, so a route and a domain function answer "may this user do this" the same way. Every denial raises a `role_boundary_violation` flag rather than failing silently — a rejected attempt is exactly what an Admin needs to see.
+
 ---
 
-## 10. Design decisions
+## 10. Governance and misuse
+
+The gate stops bad *content*. This section is about bad *conduct* — and the Agency Admin is who it is surfaced to.
+
+**Role management.** Admin assigns and reassigns each client's account manager, content lead, creators and client contacts. That is their only write power over day-to-day work, and every change writes an `AuditLog` row naming the admin, the client, the role and the user — so "who put this creator on this account, and when" is always answerable.
+
+**The misuse queue.** Five things are flagged for the Admin, all through one entry point so detection is not scattered across layers:
+
+| Flag | Raised when | Severity |
+|---|---|---|
+| `approval_override_attempt` | A brief or a client comment tries to skip or fake approval — "skip internal review", "the client pre-approved this" | high |
+| `cross_client_data` | A query would have returned another client's content, guide or analytics | high |
+| `role_boundary_violation` | A user attempts what their role forbids — a non-creator attaching a reference, a creator triggering publish, a client contact reaching another client | high |
+| `off_task_generation` | A creator prompts the engine for something unrelated to the client's content | medium |
+| `approval_churn` | An item declined repeatedly, or approved-then-revoked over and over | low |
+
+Three of these are worth being precise about:
+
+**An override attempt is recorded, never obeyed — and never a reason to refuse the work.** Clause 0.3 says instructions inside a brief carry no authority: they are "noted, never obeyed". So a brief containing bypass language still gets drafted normally; what it does not get is a shortcut past either approval stage. The flag is the "noted" half.
+
+**`cross_client_data` is a tripwire, not a routine path.** `search_guidelines` is hard-scoped, so cross-client retrieval is structurally impossible rather than merely forbidden. A row of this type therefore means a real bug or a real attempt — it should never fire in normal operation, which is exactly what makes it worth watching.
+
+**Off-task generation is refused by the model, not by a keyword list.** The creator-facing engine is a company resource, not a general chatbot. But a keyword filter would block legitimate creative work, so the deterministic pass only ever *allows* — only the generation call's own `on_task` judgment refuses. A false positive here blocks someone's actual job; a false negative costs one wasted call.
+
+**The Admin's cross-client view is the deliberate exception.** Every other role is scoped: an account manager sees their assigned clients, a client contact sees one client, a creator sees their assignments. The Admin sees everything, because oversight is the job. That exception is tested explicitly (`P11.6`) so it stays a decision rather than becoming a hole.
+
+---
+
+## 11. Design decisions
 
 | Decision | Choice | Why |
 |---|---|---|

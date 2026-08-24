@@ -1,8 +1,7 @@
 import fs from "node:fs";
-import path from "node:path";
 
 /**
- * Parses the guideline markdown in Skip_data/guidelines into clause rows.
+ * Parses the guideline markdown in data/guidelines into clause rows.
  *
  * Both the agency handbook and the brand guides use one line per clause:
  *
@@ -67,6 +66,5 @@ export function parseGuideHeading(filePath: string): string | null {
   return m ? m[1].trim() : null;
 }
 
-export const DATA_DIR = path.join(process.cwd(), "Skip_data");
-export const GUIDELINES_DIR = path.join(DATA_DIR, "guidelines");
-export const AGENCY_STANDARDS_FILE = "00_agency_standards.md";
+// Filesystem locations live in lib/config/paths.ts -- this module parses
+// clause text and does not decide where the corpus lives.

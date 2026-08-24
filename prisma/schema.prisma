@@ -223,7 +223,7 @@ model Occasion {
 
 /// Resolved per-year dates for occasions whose Gregorian date moves.
 /// Hand-seeded rather than computed: no external calendar-conversion dependency,
-/// documented as needing yearly reseeding (architecture §10).
+/// documented as needing yearly reseeding (architecture §11).
 model OccasionDate {
   occasion_date_id String   @id @default(cuid())
   occasion_id      String
@@ -355,7 +355,7 @@ model ContentItemCitation {
 }
 
 /// Generated or uploaded images and video. A photoshoot's output is always
-/// uploaded -- no API produces a real-world shoot (architecture §10).
+/// uploaded -- no API produces a real-world shoot (architecture §11).
 model MediaAsset {
   media_asset_id  String @id @default(cuid())
   content_item_id String
@@ -576,7 +576,7 @@ model PostRequest {
 ///
 /// A Comment NEVER triggers an approval reset -- only a formal Approval decline
 /// or a deliberate edit does. This keeps the gate from being eroded by informal
-/// wording (architecture §10).
+/// wording (architecture §11).
 model Comment {
   comment_id String @id @default(cuid())
   /// Exactly one of these two is set -- enforced in the domain layer.

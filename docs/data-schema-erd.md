@@ -195,9 +195,15 @@ The things the product stores: clients and the market they operate in, the peopl
 |---|---|
 | `flag_id` PK | |
 | `campaign_id` FK, `content_item_id` FK, nullable | null content_item_id = brief-level flag |
-| `clause_id` FK | the rule broken |
-| `flag_type` | brand_violation \| compliance_violation \| unknown_client \| inactive_client \| cross_client_data \| approval_override_attempt |
+| `clause_id` FK, nullable | the rule broken — null for the governance types, which breach a role boundary rather than a clause |
+| `flag_type` | **content:** brand_violation \| compliance_violation \| unknown_client \| inactive_client — raised by the engine, about the work<br>**governance:** cross_client_data \| approval_override_attempt \| role_boundary_violation \| off_task_generation \| approval_churn — raised anywhere, about a person's conduct, surfaced to the Agency Admin |
+| `severity` | `high` (a real breach: override attempt, cross-client access, role violation) \| `medium` (off-task generation) \| `low` (approval churn — a process signal, not a rule breach). Lets the Admin queue rank breaches above noise. |
+| `raised_against_id` FK → User, nullable | who did it, for the governance types. Null for engine-raised content flags, which are about a brief, not a person. |
 | `resolved`, `resolution_notes`, `resolved_at` | |
+
+> Two kinds of flag share one table because both are "route this to a human". They differ in who reads them: a content flag goes to the account manager handling that brief, a governance flag goes to the Agency Admin. `severity` and `raised_against_id` are what the Admin's misuse queue sorts and groups on.
+>
+> `cross_client_data` is a tripwire, not a routine path: retrieval scoping makes cross-client access structurally impossible, so a row here means a real bug or a real attempt, and is always `high`.
 
 **AuditLog** — append-only
 | Field | Notes |
@@ -264,7 +270,7 @@ Five user types, none with a dedicated table — each is a `User` plus, for clie
 | **Content Creator** *(incl. Marketing Specialist)* | `staff` | `content_creator` | Zero or more per client; authors the full multi-form plan; refines drafts pre-internal-review; attaches image/PDF/doc references when prompting generation or regeneration. |
 | **Content Lead** | `staff` | `content_lead` | Optional; replaces the account manager as internal reviewer for that client, with the same late-revoke power. |
 | **Client** | `client_contact` | `client_approver` | One or more per client. Approves/declines via the same Approval table, stage = client. Sees their assigned account manager; raises PostRequests and Comments; views their own analytics. |
-| **Agency Admin** | `staff`, admin=true | — | Not tied to any one client; edits account_manager_id on Client and rows in ClientAssignment directly. |
+| **Agency Admin** | `staff`, admin=true | — | Not tied to any one client; edits account_manager_id on Client and rows in ClientAssignment directly. The accountability role: the only actor with a legitimate cross-client view, the only reader of the governance `Flag` queue, and the only role that can change who works on what. Every assignment change they make writes an `AuditLog` row naming them. |
 
 ---
 

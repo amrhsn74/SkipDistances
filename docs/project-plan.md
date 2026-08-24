@@ -44,7 +44,7 @@ If any of these don't match what you want, say so before Phase 1 — the whole s
 | 8 | Client dashboard | 4, 5 |
 | 9 | Publishing layer | 4, 6 |
 | 10 | Analytics layer | 9 |
-| 11 | Audit trail completeness pass | 2–10 |
+| 11 | Admin dashboard + audit trail completeness | 2–10 |
 | 12 | Evaluation harness + full test pass | everything |
 | 13 | Polish + demo dry run | everything |
 
@@ -93,6 +93,20 @@ If any of these don't match what you want, say so before Phase 1 — the whole s
 - [ ] `P2.9` — `lib/domain/clientContactInvariant.ts`: enforce that a User assigned `role_on_client = client_approver` has at most one `ClientAssignment` row ever (the ERD's unique constraint is on the assignment role — `client_contact` is the `user_type`; don't conflate them or the test asserts nothing). Unit test: second assignment attempt throws/rejects.
 - [ ] `P2.10` — `lib/domain/overrideDetection.ts`: simple pattern check on brief text for bypass language ("skip review", "already approved", "pre-approved", "trust me") → sets `override_attempt_detected`, does not block drafting. Unit test against B-024/B-025-style text.
 
+### Governance — Admin oversight
+
+The Admin is the accountability role: they assign who works on what, and they are who misuse is surfaced to. The ERD already carries `User.is_agency_admin`, `ClientAssignment`, `AuditLog` and `Flag.flag_type` — these tasks make them behave rather than merely exist.
+
+- [ ] `P2.11` — `lib/domain/roleAssignment.ts`: the Admin's actual power. `assignRole(clientId, userId, role, byAdminId)` / `reassignAccountManager(clientId, userId, byAdminId)` / `removeAssignment(...)`, each rejecting a non-admin caller, each writing an `AuditLog` row naming who changed what. Enforces `P2.9`'s single-`client_approver` invariant on the write path rather than trusting callers. Unit tests: admin succeeds; non-admin rejected; reassignment leaves an audit trail; second client_approver rejected.
+- [ ] `P2.12` — `lib/domain/misuse.ts`: one `raiseFlag(...)` entry point for everything the Admin should see, so misuse detection isn't scattered across layers. Covers all five categories agreed with the project owner:
+  - [ ] `approval_override_attempt` — bypass language in a brief or a `PostRequest` comment (reuses `P2.10`; the comment path is the one the PRD says carries no authority, so an attempt there is still recorded)
+  - [ ] `role_boundary_violation` — a user attempting what their role forbids: a non-creator attaching a reference, a creator triggering publish, a client contact reaching another client. Currently these would be rejected silently; each rejection becomes a flag
+  - [ ] `cross_client_data` — any query that would have returned another client's content, guide or analytics. Structurally impossible per `P2.4`, so a flag here means a real bug or a real attempt — it is a tripwire, not a routine path
+  - [ ] `approval_churn` — an item declined more than N times, or approved-then-revoked repeatedly. A process signal rather than a rule breach; kept low-severity so it does not drown the others
+  - [ ] `off_task_generation` — a creator using the regeneration prompt for something unrelated to the client's content (see `P3.11`)
+  - [ ] Requires a `Flag.flag_type` widening beyond the ERD's six values — update `docs/data-schema-erd.md` in the same commit, and add a `severity` column so the Admin view can rank real breaches above churn
+- [ ] `P2.13` — `lib/domain/permissions.ts`: one table of who may do what, derived from the PRD §9 roles, so every route and domain function asks the same question instead of re-deriving it. `can(user, action, context)`. Every denial routes through `P2.12`'s `role_boundary_violation`. Unit tests per role against the capability matrix in `docs/architecture.md` §9.
+
 ---
 
 ## Phase 3 — Guarded Content Engine
@@ -124,6 +138,7 @@ If any of these don't match what you want, say so before Phase 1 — the whole s
 - [ ] `P3.8` — `lib/engine/queueOrFlag.ts`: persists `ContentItem` rows, `ContentItemCitation` rows, and `Flag` rows from the previous step's outcomes; sets `Campaign.compliance_review_required` via Phase 2 `isSensitiveSector`.
 - [ ] `P3.9` — `lib/engine/orchestrator.ts`, finished: `runIntake(campaignId)` chains all six steps end to end. Integration test: run all 27 fixture briefs through it, log actual vs. `answer_key.json` decision — don't need 100% yet, this is the first pass; the real evaluation is Phase 12.
 - [ ] `P3.10` — `lib/engine/regenerateItem.ts`: the narrower creator-triggered path — skips brief-level steps, re-runs `searchGuidelines` + generation + compliance check for one `ContentItem`, accepts optional `ReferenceAttachment` rows (image as vision input, PDF/doc text-extracted into the prompt). On success, calls Phase 2 `statusMachine` reset logic if the item was already `internal_approved` or later.
+- [ ] `P3.11` — `lib/engine/onTaskCheck.ts`: the creator-facing engine is a company resource, not a general chatbot. Before a regeneration prompt reaches Gemini, check it is actually about producing content for *this* `ContentItem`'s client — a cheap deterministic pass first (does it reference the item, the brand, the deliverable at all), then the generation call itself returns a `on_task` boolean it must justify. Off-task prompts are refused, cost nothing further, and raise `off_task_generation` via `P2.12` for the Admin. Two failure modes to keep apart in tests: a *creative* prompt that reads oddly but is genuinely about the deliverable must pass, while "write my CV" or "explain quantum physics" must not. False positives here block real work, so the deterministic pass only ever *allows*; only the model's own judgment refuses.
 
 ---
 
@@ -212,12 +227,16 @@ If any of these don't match what you want, say so before Phase 1 — the whole s
 
 ---
 
-## Phase 11 — Audit trail completeness pass
+## Phase 11 — Admin dashboard + audit trail completeness
 
-Not new functionality — a deliberate pass confirming Phase 2's habit actually held everywhere.
+Two things: the completeness pass confirming Phase 2's audit habit held everywhere, and the Admin dashboard that makes `P2.11`–`P2.13` operable. The Admin is the accountability role — without this phase they have powers in the domain layer and nowhere to exercise them.
 
 - [ ] `P11.1` — Walk every mutating endpoint from Phase 4 and every domain function from Phase 2 that changes state; confirm each writes an `AuditLog` row. Fill any gap found.
-- [ ] `P11.2` — Admin or Account Manager audit log view, filterable by client and entity type.
+- [ ] `P11.2` — `/Admin` role management: the client roster with its assigned account manager, content lead, creators and client contacts; change any of them inline, wired to `P2.11`. This is the PRD's "Admin edits the fields directly on a client record; no dedicated user-management screen".
+- [ ] `P11.3` — `/Admin` audit log view: every `AuditLog` row, filterable by client, entity type, action and actor. Cross-client by design — the one view that is not scoped, because the Admin's job is oversight.
+- [ ] `P11.4` — `/Admin` misuse queue: open `Flag` rows from `P2.12`, ranked by severity, showing what happened, who did it, and the clause or rule involved; resolve with notes (writes `flag_resolved`). Override attempts and cross-client tripwires sort above churn.
+- [ ] `P11.5` — `/Admin` cross-client operational view: where every account stands, per the PRD's "cross-client view of where every account stands". Reuses `P4.8`'s summary query unscoped.
+- [ ] `P11.6` — Test: the Admin views are the *only* place cross-client data is legitimately visible. Assert an account manager hitting the same queries sees their assigned clients only, and a client contact sees one client — the counterpart to `P10.4`, proving the Admin exception is deliberate rather than a hole.
 
 ---
 

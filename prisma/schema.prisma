@@ -84,8 +84,9 @@ model Client {
 
   account_manager User?   @relation("AccountManager", fields: [account_manager_id], references: [user_id], onDelete: SetNull)
 
-  markets      ClientMarket[]
-  assignments  ClientAssignment[]
+  markets            ClientMarket[]
+  assignments        ClientAssignment[]
+  brand_guide_versions BrandGuideVersion[]
 
   @@index([status])
   @@index([account_manager_id])
@@ -100,7 +101,8 @@ model Market {
   /// informational -- e.g. "gregorian_and_hijri"
   calendar_system String
 
-  clients ClientMarket[]
+  clients   ClientMarket[]
+  occasions Occasion[]
 }
 
 /// Which markets a client operates in. The account manager picks one or both
@@ -117,4 +119,102 @@ model ClientMarket {
   @@unique([client_id, market_id])
   @@index([client_id])
   @@index([market_id])
+}
+
+// ---------------------------------------------------------------------------
+// Brand governance
+// ---------------------------------------------------------------------------
+
+/// Only one version per client is ever active. Past versions stay superseded,
+/// never deleted -- the PRD requires past versions remain visible.
+model BrandGuideVersion {
+  brand_guide_version_id String @id @default(cuid())
+  client_id              String
+  version_number         Int
+  /// draft | pending_client_approval | active | superseded
+  status                 String
+
+  created_by_id          String?
+  client_approved_by_id  String?
+
+  created_at  DateTime  @default(now())
+  approved_at DateTime?
+
+  client  Client            @relation(fields: [client_id], references: [client_id], onDelete: Cascade)
+  clauses GuidelineClause[]
+
+  @@unique([client_id, version_number])
+  @@index([client_id, status])
+}
+
+/// The agency standards handbook and every client's brand rules, in one table.
+/// An agency clause has source_type = "agency" and a null brand_guide_version_id
+/// (global, unversioned); a brand clause belongs to exactly one guide version.
+///
+/// clause_code is the citation vocabulary the Phase 12 evaluation is graded
+/// against -- "0.6", "1.3", "CR.4", "NF.2" -- so it must match the source
+/// markdown exactly.
+model GuidelineClause {
+  clause_id String @id @default(cuid())
+  /// agency | brand
+  source_type            String
+  brand_guide_version_id String?
+
+  clause_code String
+  title       String
+  text        String
+
+  brand_guide_version BrandGuideVersion? @relation(fields: [brand_guide_version_id], references: [brand_guide_version_id], onDelete: Cascade)
+
+  @@unique([brand_guide_version_id, clause_code])
+  @@index([source_type])
+  @@index([clause_code])
+}
+
+// ---------------------------------------------------------------------------
+// Calendar
+// ---------------------------------------------------------------------------
+
+/// Regional and local calendar entries, scoped to one market.
+model Occasion {
+  occasion_id String @id @default(cuid())
+  market_id   String
+  name        String
+  /// religious | national | seasonal | retail
+  category    String
+  /// fixed_gregorian | hijri_based
+  date_type   String
+
+  /// Used only when date_type = fixed_gregorian.
+  month Int?
+  day   Int?
+
+  /// Set when the same observance exists in more than one market -- "ramadan",
+  /// "eid_al_fitr". Lets resolve_calendar collapse Egypt's and Saudi Arabia's
+  /// Ramadan into one entry so a dual-market client gets one item, not two
+  /// near-duplicates. National days have no shared_key and stay market-specific.
+  shared_key String?
+
+  market Market         @relation(fields: [market_id], references: [market_id], onDelete: Cascade)
+  dates  OccasionDate[]
+
+  @@index([market_id])
+  @@index([shared_key])
+}
+
+/// Resolved per-year dates for occasions whose Gregorian date moves.
+/// Hand-seeded rather than computed: no external calendar-conversion dependency,
+/// documented as needing yearly reseeding (architecture §10).
+model OccasionDate {
+  occasion_date_id String   @id @default(cuid())
+  occasion_id      String
+  year             Int
+  gregorian_date   DateTime
+  /// seeded -- hand-maintained, not calculated
+  source           String   @default("seeded")
+
+  occasion Occasion @relation(fields: [occasion_id], references: [occasion_id], onDelete: Cascade)
+
+  @@unique([occasion_id, year])
+  @@index([year])
 }

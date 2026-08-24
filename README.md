@@ -20,10 +20,10 @@ The source of truth for *what* this is. Read in this order:
 
 | Document | What it covers |
 |---|---|
-| [PRD_SkipStudio.md](PRD_SkipStudio.md) | Product requirements — users, scope, success criteria |
-| [system_architecture.md](system_architecture.md) | Components, the guarded engine, the approval gate, publishing |
-| [data_schema_erd.md](data_schema_erd.md) | Every entity, field, and relationship |
-| [PROJECT_PLAN.md](PROJECT_PLAN.md) | The build sequence — source of truth for *what order* |
+| [docs/PRD.md](docs/PRD.md) | Product requirements — users, scope, success criteria |
+| [docs/architecture.md](docs/architecture.md) | Components, the guarded engine, the approval gate, governance, publishing |
+| [docs/data-schema-erd.md](docs/data-schema-erd.md) | Every entity, field, and relationship |
+| [docs/project-plan.md](docs/project-plan.md) | The build sequence — source of truth for *what order* |
 
 ## Stack
 
@@ -62,7 +62,7 @@ run without it. Get one at [aistudio.google.com/apikey](https://aistudio.google.
 
 ## Source data
 
-`Skip_data/` is the provided input, treated as read-only:
+`data/` is the provided input, treated as read-only:
 
 - **`clients.json`** — 150-client roster. Only the 8 hero clients (CL-101–108)
   have a brand guide; the rest are governed by agency standards alone. CL-109 is
@@ -72,30 +72,45 @@ run without it. Get one at [aistudio.google.com/apikey](https://aistudio.google.
   8 guides. Clause codes (`0.6`, `1.3`, `CR.4`, `NF.2`) are the citation
   vocabulary the evaluation grades against, so they are parsed verbatim.
 - **`briefs/`** + **`answer_key.json`** — 27 briefs and their expected outcomes.
-  Copied to [fixtures/](fixtures/) as test inputs; they are deliberately *not*
-  seeded as campaigns.
+  Read directly by the tests rather than copied, so a fixture can never drift
+  from the data the engine is graded against. They are deliberately *not* seeded
+  as campaigns.
+
+The roster and the guideline corpus are **seeded into the database**, and the
+engine retrieves them per-request from there — the model is never handed the
+corpus to hold in its own memory. That is what makes cross-client leakage
+structurally impossible rather than a matter of model behaviour.
 
 ## Project layout
 
 ```
 app/                 Next.js App Router — role routes, API routes
 lib/
-  db.ts              Prisma client singleton
+  db.ts              Prisma client singleton + shared Prisma types
+  config/            Filesystem paths, environment access
   domain/            Pure, unit-tested rules (Phase 2)
   engine/            The guarded content engine (Phase 3)
+  llm/               Gemini wrapper (Phase 3)
+  instagram/         Graph API client + OAuth (Phase 9)
   generated/prisma/  Generated Prisma client (gitignored)
 prisma/
   schema.prisma      All 21 entities — a living copy of the ERD
   seed.ts            Roster, guidelines, markets, occasions, users
-  seed/              Guideline parser, sensitive-sector derivation
-fixtures/            The 27 evaluation briefs + answer key + loader
+tests/fixtures/      Loader for the 27 evaluation briefs + answer key
 scripts/             Seed verification; scheduler and analytics workers later
-Skip_data/           Provided source data (read-only)
+data/                Provided source data (read-only)
+docs/                PRD, architecture, ERD, project plan
 ```
+
+Dependencies point **inward** — `app/` → `engine/` → `domain/` → `db`. Enforced
+by `no-restricted-imports` in `.eslintrc.json`, so a violation fails
+`npm run lint`: `lib/domain` cannot import the engine, the Gemini SDK, or React,
+which is what keeps the rules the assignment is graded on unit-testable without
+a network. Only `lib/db.ts` imports the generated Prisma client.
 
 ## Build status
 
-Following [PROJECT_PLAN.md](PROJECT_PLAN.md), one phase per layer.
+Following [docs/project-plan.md](docs/project-plan.md), one phase per layer.
 
 - [x] **Phase 1** — Data layer: schema (21 entities) + seed
 - [ ] **Phase 2** — Domain / rules layer
@@ -107,7 +122,7 @@ Following [PROJECT_PLAN.md](PROJECT_PLAN.md), one phase per layer.
 - [ ] **Phase 8** — Client dashboard
 - [ ] **Phase 9** — Publishing layer
 - [ ] **Phase 10** — Analytics layer
-- [ ] **Phase 11** — Audit trail completeness pass
+- [ ] **Phase 11** — Admin dashboard + audit trail completeness
 - [ ] **Phase 12** — Evaluation harness + full test pass
 - [ ] **Phase 13** — Polish + demo dry run
 

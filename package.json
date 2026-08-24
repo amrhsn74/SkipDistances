@@ -11,7 +11,8 @@
     "db:generate": "prisma generate",
     "db:seed": "prisma db seed",
     "db:reset": "prisma migrate reset --force",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:verify": "tsx scripts/verifySeed.ts"
   },
   "dependencies": {
     "@google/genai": "^2.18.0",

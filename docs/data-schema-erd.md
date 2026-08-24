@@ -36,7 +36,9 @@ The things the product stores: clients and the market they operate in, the peopl
 | `client_id` FK → Client, `user_id` FK → User | |
 | `role_on_client` | `content_lead` (replaces account manager as reviewer) \| `content_creator` \| `client_approver` |
 
-> A `client_approver` User may have exactly one `ClientAssignment` row, ever — enforced by a unique constraint on `user_id`. Staff roles are intentionally many-to-many with Client; a client contact is not.
+> A `client_approver` User may have exactly one `ClientAssignment` row, ever. Staff roles are intentionally many-to-many with Client; a client contact is not.
+>
+> Enforced by a **partial** unique index — `(user_id) WHERE role_on_client = 'client_approver'` — not by a plain unique on `user_id`, which would also forbid a content creator working across several accounts. The model-level `@@unique([client_id, user_id, role_on_client])` does not express this rule on its own: it permits the same contact to approve for CL-101 *and* CL-102, since those rows differ by `client_id`. That is the cross-client hole the invariant exists to close, so the index is declared in raw SQL (Prisma's schema language cannot express a filtered index) and `lib/domain/clientContactInvariant.ts` enforces the same rule with a readable error.
 
 ### Clients & markets
 

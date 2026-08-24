@@ -1,0 +1,120 @@
+// Skip Studio — Content Operations Platform
+//
+// This schema is a direct translation of data_schema_erd.md. When the two
+// disagree, the ERD is the source of truth for *what* and this file follows it.
+//
+// SQLite has no native enum type, so every field the ERD types as an enum is a
+// String here, with the legal values named in a comment above it. The domain
+// layer (lib/domain/, Phase 2) is what actually enforces them -- not the DB, and
+// never a prompt.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ---------------------------------------------------------------------------
+// People & access
+// ---------------------------------------------------------------------------
+
+model User {
+  user_id        String  @id @default(cuid())
+  name           String
+  /// staff | client_contact
+  user_type      String
+  /// staff only; assigns roles on client records
+  is_agency_admin Boolean @default(false)
+
+  created_at DateTime @default(now())
+
+  assignments       ClientAssignment[]
+  managed_clients   Client[]           @relation("AccountManager")
+
+  @@index([user_type])
+}
+
+/// Per-client team, beyond the default account manager.
+model ClientAssignment {
+  assignment_id String @id @default(cuid())
+  client_id     String
+  user_id       String
+  /// content_lead | content_creator | client_approver
+  role_on_client String
+
+  created_at DateTime @default(now())
+
+  client Client @relation(fields: [client_id], references: [client_id], onDelete: Cascade)
+  user   User   @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  // A user holds one role per client at a time.
+  @@unique([client_id, user_id, role_on_client])
+  @@index([client_id])
+  @@index([user_id])
+}
+
+// ---------------------------------------------------------------------------
+// Clients & markets
+// ---------------------------------------------------------------------------
+
+model Client {
+  client_id String @id
+  name      String
+  /// Free text in the seed roster -- 18 distinct values across 150 clients.
+  /// Never compare it with equality; lib/domain/sensitiveSector.ts normalizes.
+  industry  String
+  /// active | inactive -- gates whether any content may be produced (Clause 0.6)
+  status    String
+  /// informational only, no behavior tied to it (PRD §6)
+  tier      String?
+  /// JSON-encoded string[] -- SQLite has no array type
+  channels  String
+
+  /// Nullable: CL-109 (Pyramide Motors, former) has no account manager.
+  account_manager_id    String?
+  /// Nullable, and null is the common case: only 8 of 150 seeded clients have
+  /// a brand guide. A client with none is governed by agency clauses alone.
+  active_brand_guide_id String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  account_manager User?   @relation("AccountManager", fields: [account_manager_id], references: [user_id], onDelete: SetNull)
+
+  markets      ClientMarket[]
+  assignments  ClientAssignment[]
+
+  @@index([status])
+  @@index([account_manager_id])
+}
+
+/// Seeded with two rows: Egypt and Saudi Arabia. A real table rather than a
+/// hardcoded enum, so a third market is a data insert, not a migration.
+model Market {
+  market_id    String @id @default(cuid())
+  name         String @unique
+  country_code String @unique
+  /// informational -- e.g. "gregorian_and_hijri"
+  calendar_system String
+
+  clients ClientMarket[]
+}
+
+/// Which markets a client operates in. The account manager picks one or both
+/// at client creation. Many-to-many so a dual-market client needs no schema
+/// change -- see PRD §6 "Market".
+model ClientMarket {
+  client_market_id String @id @default(cuid())
+  client_id        String
+  market_id        String
+
+  client Client @relation(fields: [client_id], references: [client_id], onDelete: Cascade)
+  market Market @relation(fields: [market_id], references: [market_id], onDelete: Cascade)
+
+  @@unique([client_id, market_id])
+  @@index([client_id])
+  @@index([market_id])
+}

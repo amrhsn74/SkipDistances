@@ -11,6 +11,7 @@ import {
   BrandGuideValidationError,
 } from "../domain/brandGuides";
 import { ClientValidationError } from "../domain/clientRoster";
+import { CommentTargetNotFoundError, CommentValidationError } from "../domain/comments";
 import { PermissionDeniedError } from "../domain/permissions";
 import {
   PostRequestNotAllowedError,
@@ -137,6 +138,13 @@ export function errorResponse(error: unknown): NextResponse<ApiError> {
     );
   }
 
+  if (error instanceof CommentTargetNotFoundError) {
+    // Reachable only inside the caller's scope -- a request or item they may not
+    // see is denied by `enforce` first, and answers 403. So a 404 here never
+    // discloses whether another client's post exists.
+    return jsonError(404, error.code, error.message);
+  }
+
   if (error instanceof BrandGuideNotFoundError) {
     // Reachable only inside the caller's scope -- a version they may not see is
     // denied by `enforce` first, and answers 403.
@@ -161,6 +169,7 @@ export function errorResponse(error: unknown): NextResponse<ApiError> {
     error instanceof PostRequestValidationError ||
     error instanceof ClientValidationError ||
     error instanceof BrandGuideValidationError ||
+    error instanceof CommentValidationError ||
     error instanceof CampaignValidationError ||
     error instanceof ReferenceValidationError
   ) {

@@ -174,12 +174,12 @@ The Admin is the accountability role: they assign who works on what, and they ar
 
 **Goal:** the routing structure exists, and the first full-loop dashboard (client creation → brief intake → queue) is usable end to end.
 
-- [ ] `P5.1` — App Router shell: `app/AccountManager/`, `app/ContentLead/`, `app/Creator/`, `app/Client/`, `app/Admin/` layout folders, shared nav/header component, empty pages.
-- [ ] `P5.2` — Sign-in page + session middleware: one login screen for all roles, redirecting to the role's home route. Middleware resolves `P2.D`'s session on every request and sends an unauthenticated visitor to sign-in; a user with `must_change_password` is sent to the password screen and can reach nothing else until it is set.
-- [ ] `P5.3` — Client onboarding flow: Account Manager creates a client contact and is shown the one-time code **on screen** to pass on (`P2.C`); the contact signs in with email + code, is forced to set a password, and lands in their own client's view. Their scope comes from the session, so editing the URL cannot reach another client. This is the flow that makes the isolation guarantee demonstrable live.
-- [ ] `P5.4` — Account Manager: client list + "create client" form covering every roster field including markets — a **multi-select** against the seeded `Market` rows, at least one required. Editable after creation.
-- [ ] `P5.5` — Account Manager: brief intake form + incoming queue view, wired to `POST /api/campaigns`.
-- [ ] `P5.6` — Account Manager: operational summary / counts panel, wired to `GET /api/summary`.
+- [x] `P5.1` — App Router shell: `app/AccountManager/`, `app/ContentLead/`, `app/Creator/`, `app/Client/`, `app/Admin/` layout folders, shared nav/header component, empty pages.
+- [x] `P5.2` — Sign-in page + session middleware: one login screen for all roles, redirecting to the role's home route. Middleware resolves `P2.D`'s session on every request and sends an unauthenticated visitor to sign-in; a user with `must_change_password` is sent to the password screen and can reach nothing else until it is set.
+- [x] `P5.3` — Client onboarding flow: Account Manager creates a client contact and is shown the one-time code **on screen** to pass on (`P2.C`); the contact signs in with email + code, is forced to set a password, and lands in their own client's view. Their scope comes from the session, so editing the URL cannot reach another client. This is the flow that makes the isolation guarantee demonstrable live.
+- [x] `P5.4` — Account Manager: client list + "create client" form covering every roster field including markets — a **multi-select** against the seeded `Market` rows, at least one required. Editable after creation.
+- [x] `P5.5` — Account Manager: brief intake form + incoming queue view, wired to `POST /api/campaigns`.
+- [x] `P5.6` — Account Manager: operational summary / counts panel, wired to `GET /api/summary`.
 
 ---
 

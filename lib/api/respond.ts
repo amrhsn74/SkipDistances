@@ -10,6 +10,8 @@ import {
   BrandGuideNotFoundError,
   BrandGuideValidationError,
 } from "../domain/brandGuides";
+import { ClientContactError } from "../domain/clientContacts";
+import { SingleClientApproverError } from "../domain/clientContactInvariant";
 import { ClientValidationError } from "../domain/clientRoster";
 import { CommentTargetNotFoundError, CommentValidationError } from "../domain/comments";
 import { PermissionDeniedError } from "../domain/permissions";
@@ -168,6 +170,7 @@ export function errorResponse(error: unknown): NextResponse<ApiError> {
     error instanceof ApprovalValidationError ||
     error instanceof PostRequestValidationError ||
     error instanceof ClientValidationError ||
+    error instanceof ClientContactError ||
     error instanceof BrandGuideValidationError ||
     error instanceof CommentValidationError ||
     error instanceof CampaignValidationError ||
@@ -177,6 +180,15 @@ export function errorResponse(error: unknown): NextResponse<ApiError> {
       { error: { code: error.code, message: error.message, issues: error.issues } },
       { status: 422 },
     );
+  }
+
+  if (error instanceof SingleClientApproverError) {
+    // 409, not 422. The body was well-formed and the caller is permitted -- it
+    // is the person named who already approves somewhere else, and that can
+    // change. This is what an account manager gets for onboarding a contact who
+    // already holds another client, and the answer is not "fix your form" but
+    // "that person is already somebody else's approver".
+    return jsonError(409, error.code, error.message);
   }
 
   if (error instanceof SyntaxError) {

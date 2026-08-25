@@ -76,13 +76,18 @@ deployed anywhere reachable, and the value is printed by `npm run db:seed`.
 
 Emails are derived from names — `Sara Selim` → `sara.selim@skipstudio.test`:
 
-| Role | Example |
-|---|---|
-| Account Manager | `sara.selim@skipstudio.test` |
-| Content Lead | `youssef.adel@skipstudio.test` |
-| Content Creator | `mona.farid@skipstudio.test` |
-| Client (CL-101) | `rana.fouad@skipstudio.test` |
-| Agency Admin | `hala.mansour@skipstudio.test` |
+| Role | Example | Lands on |
+|---|---|---|
+| Account Manager | `sara.selim@skipstudio.test` | `/AccountManager` |
+| Content Lead | `youssef.adel@skipstudio.test` | `/ContentLead` |
+| Content Creator | `mona.farid@skipstudio.test` | `/Creator` |
+| Client (CL-101) | `rana.fouad@skipstudio.test` | `/Client` |
+| Agency Admin | `hala.mansour@skipstudio.test` | `/Admin` |
+
+Sign-in takes a password *or* a one-time code — one endpoint and one failure
+message for both, so the response never reveals which an address holds. Typing
+another role's URL redirects you to your own home; the page data is still
+checked by `enforce` regardless, since a hidden link is not a protected one.
 
 **One account is deliberately left un-activated.** `ahmed.rifaat@skipstudio.test`
 (StayEasy, CL-108) has `status = invited` and no password at all, so the OTP flow

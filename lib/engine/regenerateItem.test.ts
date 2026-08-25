@@ -36,6 +36,11 @@ afterEach(async () => {
   await Promise.all(tempFiles.splice(0).map((file) => rm(file, { force: true })));
   campaignIds.length = 0;
   itemIds.length = 0;
+
+  // The fixture creator goes too. Left behind, it is an active user with no
+  // password, which is precisely what `npm run db:verify` asserts cannot exist --
+  // so a stray fixture fails the seed check rather than this test.
+  await prisma.user.deleteMany({ where: { user_id: CREATOR } });
 });
 
 function generatedPlan(over: Partial<GeneratedPlan["items"][number]> = {}): GeneratedPlan {

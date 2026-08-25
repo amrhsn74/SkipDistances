@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 
+import { SESSION_COOKIE } from "../config/session";
 import { prisma, type Db } from "../db";
 import { resolveSession, type ResolvedSession } from "../domain/session";
 
@@ -18,8 +19,12 @@ import { resolveSession, type ResolvedSession } from "../domain/session";
  * redirecting, because its caller is fetch, not a person.
  */
 
-/** The cookie the sign-in route sets. Named once, here. */
-export const SESSION_COOKIE = "skipstudio_session";
+/**
+ * The cookie the sign-in route sets. Re-exported rather than defined here: the
+ * middleware needs the name too and runs on the edge, where this module's
+ * `lib/db` import cannot follow.
+ */
+export { SESSION_COOKIE };
 
 /** The shape `accessScope` and `permissions` expect, plus the status they check. */
 export type ActingUser = ResolvedSession["user"];

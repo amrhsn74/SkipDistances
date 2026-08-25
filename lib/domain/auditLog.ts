@@ -41,7 +41,10 @@ export type AuditEntityType =
   | "MediaAsset"
   | "ReferenceAttachment"
   | "ClientAssignment"
-  | "LoginOtp";
+  | "LoginOtp"
+  // A password being set or changed. The row records that it happened and by
+  // whom -- never the password, and never the hash.
+  | "User";
 
 export type WriteAuditInput = {
   entityType: AuditEntityType;

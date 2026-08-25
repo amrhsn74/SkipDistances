@@ -22,12 +22,31 @@ datasource db {
 // ---------------------------------------------------------------------------
 
 model User {
-  user_id        String  @id @default(cuid())
-  name           String
+  user_id String @id @default(cuid())
+  name    String
+  /// The login identifier. Stored lowercased so sign-in is case-insensitive.
+  email   String @unique
+
+  /// Null until the account is activated. A client contact is created by their
+  /// account manager and has no password until they redeem their one-time code,
+  /// so this is nullable by design rather than as a convenience.
+  password_hash String?
+
   /// staff | client_contact
-  user_type      String
+  user_type String
   /// staff only; assigns roles on client records
   is_agency_admin Boolean @default(false)
+
+  /// Set after an OTP redemption. Blocks every route except the
+  /// change-password screen until the user chooses their own.
+  must_change_password Boolean @default(false)
+
+  /// invited | active | disabled
+  /// `invited` = created, never signed in. `disabled` stops sessions resolving
+  /// immediately rather than at their next expiry.
+  status String @default("active")
+
+  last_login_at DateTime?
 
   created_at DateTime @default(now())
 
@@ -41,8 +60,66 @@ model User {
   audit_entries       AuditLog[]            @relation("AuditEntries")
   uploaded_media      MediaAsset[]          @relation("UploadedMedia")
   uploaded_references ReferenceAttachment[] @relation("UploadedReferences")
+  sessions            Session[]
+  login_otps          LoginOtp[]            @relation("OtpRecipient")
+  issued_otps         LoginOtp[]            @relation("OtpIssuer")
 
   @@index([user_type])
+  @@index([status])
+}
+
+/// The one-time code that activates an invited account.
+///
+/// Issued by an account manager when they create a client contact, and shown to
+/// them **on screen** to pass on — there is no email integration in this version
+/// (PRD §4). Only the hash is stored, so the plaintext exists exactly once, at
+/// the moment it is displayed.
+///
+/// The code grants nothing on its own: redeeming it only unlocks setting a
+/// password. It does not create a session.
+model LoginOtp {
+  otp_id  String @id @default(cuid())
+  user_id String
+
+  /// Hashed like a password -- a leaked table must not hand over working codes.
+  code_hash String
+
+  expires_at  DateTime
+  /// Set on redemption. A code works exactly once.
+  consumed_at DateTime?
+
+  /// The account manager who issued it, for the audit trail.
+  created_by_id String?
+  created_at    DateTime @default(now())
+
+  user       User  @relation("OtpRecipient", fields: [user_id], references: [user_id], onDelete: Cascade)
+  created_by User? @relation("OtpIssuer", fields: [created_by_id], references: [user_id], onDelete: SetNull)
+
+  @@index([user_id, consumed_at])
+  @@index([expires_at])
+}
+
+/// A signed-in user.
+///
+/// Server-side rather than a self-describing token, so signing out or disabling
+/// an account takes effect immediately instead of at the token's next expiry.
+/// Every request derives the acting user from here -- never from a query
+/// parameter or header the browser controls.
+model Session {
+  session_id String @id @default(cuid())
+  user_id    String
+
+  /// The session token, hashed. A leaked table yields no usable sessions.
+  token_hash String @unique
+
+  expires_at DateTime
+  revoked_at DateTime?
+  created_at DateTime  @default(now())
+
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([expires_at])
 }
 
 /// Per-client team, beyond the default account manager.

@@ -46,12 +46,22 @@ beforeEach(async () => {
   await prisma.user.upsert({
     where: { user_id: TEST_USER },
     update: {},
-    create: { user_id: TEST_USER, name: "Test Approver", user_type: "client_contact" },
+    create: {
+      user_id: TEST_USER,
+      name: "Test Approver",
+      email: "test-approver@skipstudio.test",
+      user_type: "client_contact",
+    },
   });
   await prisma.user.upsert({
     where: { user_id: TEST_STAFF },
     update: {},
-    create: { user_id: TEST_STAFF, name: "Test Creator", user_type: "staff" },
+    create: {
+      user_id: TEST_STAFF,
+      name: "Test Creator",
+      email: "test-creator@skipstudio.test",
+      user_type: "staff",
+    },
   });
 
   await cleanup();

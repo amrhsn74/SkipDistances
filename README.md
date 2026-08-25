@@ -60,6 +60,35 @@ run without it. Get one at [aistudio.google.com/apikey](https://aistudio.google.
 | `npm run db:studio` | Browse the database in Prisma Studio |
 | `npm run db:reset` | Drop and rebuild the database, then reseed |
 
+## Signing in
+
+Every role signs in — there is no anonymous route. The seed creates accounts for
+all five roles with a **known development password**, so a walkthrough does not
+begin with a password reset:
+
+```
+password: skipstudio-dev
+```
+
+That is a committed development credential, not a secret. Nothing here is
+deployed anywhere reachable, and the value is printed by `npm run db:seed`.
+
+Emails are derived from names — `Sara Selim` → `sara.selim@skipstudio.test`:
+
+| Role | Example |
+|---|---|
+| Account Manager | `sara.selim@skipstudio.test` |
+| Content Lead | `youssef.adel@skipstudio.test` |
+| Content Creator | `mona.farid@skipstudio.test` |
+| Client (CL-101) | `rana.fouad@skipstudio.test` |
+| Agency Admin | `hala.mansour@skipstudio.test` |
+
+**One account is deliberately left un-activated.** `ahmed.rifaat@skipstudio.test`
+(StayEasy, CL-108) has `status = invited` and no password at all, so the OTP flow
+is demonstrable end to end against seeded data: their account manager issues a
+one-time code, the code is shown on screen to pass on, and the contact redeems it
+and sets their own password before reaching anything.
+
 ## Source data
 
 `data/` is the provided input, treated as read-only:

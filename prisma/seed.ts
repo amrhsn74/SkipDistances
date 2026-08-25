@@ -10,6 +10,7 @@ import {
 } from "../lib/config/paths";
 import { parseGuidelineFile, parseGuideHeading } from "../lib/domain/parseGuidelines";
 import { isSensitiveSector } from "../lib/domain/sensitiveSector";
+import { hashWithoutPolicy } from "../lib/domain/password";
 
 type RosterClient = {
   client_id: string;
@@ -192,25 +193,75 @@ async function seedMarketsAndOccasions() {
  * Client.account_manager_id points at a row rather than a string. The rest of
  * the demo team is invented -- the roster names creators and leads nowhere.
  */
+/**
+ * The password every seeded demo account shares.
+ *
+ * A known development credential, not a secret: it is committed, printed by the
+ * seed, and documented in the README so a walkthrough does not begin with a
+ * password reset. Nothing in this project is deployed anywhere reachable.
+ */
+export const DEV_PASSWORD = "skipstudio-dev";
+
+/**
+ * "Dr. Amira Hassan" -> "dr.amira.hassan@skipstudio.test"
+ *
+ * The P2.A migration backfills existing rows with the identical expression in
+ * SQL, so a migrated database and a freshly seeded one produce the same
+ * addresses. Change one and the other must change with it.
+ */
+export function emailForName(name: string): string {
+  const local = name
+    .trim()
+    .toLowerCase()
+    .replace(/[.']/g, "")
+    .replace(/\s+/g, ".");
+  return `${local}@skipstudio.test`;
+}
+
+/**
+ * One hero-client contact is left `invited`: created by their account manager,
+ * no password yet, waiting on a one-time code. That makes the OTP flow
+ * demonstrable end to end against seeded data rather than needing a fresh
+ * account to be built by hand first.
+ */
+const INVITED_CONTACT_CLIENT = "CL-108";
+
 async function seedUsers(roster: RosterClient[]) {
   const amNames = Array.from(
     new Set(roster.map((c) => c.account_manager).filter(Boolean) as string[]),
   );
 
   const userIdByName: Record<string, string> = {};
+  const passwordHash = await hashWithoutPolicy(DEV_PASSWORD);
 
-  async function ensureUser(name: string, user_type: string, is_agency_admin = false) {
-    const existing = await prisma.user.findFirst({ where: { name, user_type } });
-    const row = existing
-      ? await prisma.user.update({ where: { user_id: existing.user_id }, data: { is_agency_admin } })
-      : await prisma.user.create({ data: { name, user_type, is_agency_admin } });
+  async function ensureUser(
+    name: string,
+    user_type: string,
+    opts: { is_agency_admin?: boolean; invited?: boolean } = {},
+  ) {
+    const { is_agency_admin = false, invited = false } = opts;
+
+    // An invited account has no credential at all -- that is the state the OTP
+    // flow exists to resolve, so seeding one with a password would hide it.
+    const credentials = invited
+      ? { password_hash: null, status: "invited", must_change_password: false }
+      : { password_hash: passwordHash, status: "active", must_change_password: false };
+
+    const email = emailForName(name);
+
+    const row = await prisma.user.upsert({
+      where: { email },
+      update: { name, user_type, is_agency_admin, ...credentials },
+      create: { name, email, user_type, is_agency_admin, ...credentials },
+    });
+
     userIdByName[name] = row.user_id;
     return row;
   }
 
   for (const n of amNames) await ensureUser(n, "staff");
 
-  await ensureUser("Hala Mansour", "staff", true); // Agency Admin
+  await ensureUser("Hala Mansour", "staff", { is_agency_admin: true }); // Agency Admin
 
   const contentLeads = ["Youssef Adel"];
   const creators = ["Mona Farid", "Ziad Hafez", "Nour Kamal"];
@@ -227,9 +278,17 @@ async function seedUsers(roster: RosterClient[]) {
     "CL-107": "Salma Ibrahim",
     "CL-108": "Ahmed Rifaat",
   };
-  for (const n of Object.values(heroContacts)) await ensureUser(n, "client_contact");
+  for (const [clientId, name] of Object.entries(heroContacts)) {
+    await ensureUser(name, "client_contact", {
+      invited: clientId === INVITED_CONTACT_CLIENT,
+    });
+  }
 
+  const invitedName = heroContacts[INVITED_CONTACT_CLIENT];
   console.log(`  users:         ${Object.keys(userIdByName).length}`);
+  console.log(`  password:      "${DEV_PASSWORD}" (all except the invited contact)`);
+  console.log(`  invited:       ${invitedName} <${emailForName(invitedName)}> — awaiting OTP`);
+
   return { userIdByName, contentLeads, creators, heroContacts };
 }
 

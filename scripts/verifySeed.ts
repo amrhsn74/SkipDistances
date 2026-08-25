@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { prisma } from "../lib/db";
+import { verifyPassword } from "../lib/domain/password";
 
 let fails = 0;
 function check(label: string, ok: boolean, detail = "") {
@@ -71,6 +72,28 @@ async function main() {
   // content lead present for CL-103 only
   const leads = await prisma.clientAssignment.findMany({ where: { role_on_client: "content_lead" }});
   check("one content lead, on CL-103", leads.length===1 && leads[0].client_id==="CL-103");
+
+  // --- P2.A: credentials -----------------------------------------------------
+  const users = await prisma.user.findMany({
+    select: { user_id: true, name: true, email: true, password_hash: true, status: true },
+  });
+  check("every user has an email", users.every(u => !!u.email), `${users.length} users`);
+  check("emails are unique", new Set(users.map(u => u.email)).size === users.length);
+  check("emails are lowercased", users.every(u => u.email === u.email.toLowerCase()));
+
+  const invited = users.filter(u => u.status === "invited");
+  check("exactly one contact is invited", invited.length === 1, invited.map(u => u.email).join(", "));
+  check("the invited contact has no password", invited.every(u => u.password_hash === null));
+
+  const active = users.filter(u => u.status === "active");
+  check("every active user has a password hash", active.every(u => !!u.password_hash), `${active.length} active`);
+  check(
+    "stored hashes are scrypt, not plaintext",
+    active.every(u => u.password_hash!.startsWith("scrypt$") && !u.password_hash!.includes("skipstudio-dev")),
+  );
+
+  const verifies = await verifyPassword("skipstudio-dev", active[0]?.password_hash);
+  check("the seeded dev password verifies", verifies);
 
   console.log(fails === 0 ? "\nAll checks passed." : `\n${fails} CHECK(S) FAILED`);
   process.exit(fails === 0 ? 0 : 1);

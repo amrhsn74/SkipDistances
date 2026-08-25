@@ -3,6 +3,10 @@ import { defineConfig } from "vitest/config";
 
 const root = import.meta.dirname;
 
+// `npm run test:live` passes --mode live. Cross-platform: setting an env var
+// inline in an npm script does not work on Windows cmd.
+const isLive = process.argv.includes("live");
+
 export default defineConfig({
   test: {
     // Domain tests are pure and run in-process. Tests that touch the database
@@ -12,7 +16,14 @@ export default defineConfig({
     pool: "forks",
     maxWorkers: 1,
     include: ["lib/**/*.test.ts", "tests/**/*.test.ts", "scripts/**/*.test.ts"],
-    exclude: ["node_modules/**", "lib/generated/**", ".next/**"],
+    // *.live.test.ts calls the real Gemini API. Excluded by default so `npm run
+    // check` needs no key and no network; run them with `npm run test:live`.
+    exclude: [
+      "node_modules/**",
+      "lib/generated/**",
+      ".next/**",
+      ...(isLive ? [] : ["**/*.live.test.ts"]),
+    ],
     setupFiles: ["dotenv/config"],
     coverage: {
       provider: "v8",

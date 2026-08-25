@@ -59,6 +59,7 @@ run without it. Get one at [aistudio.google.com/apikey](https://aistudio.google.
 | `npm run db:verify` | Assert the seeded data holds its invariants |
 | `npm run db:studio` | Browse the database in Prisma Studio |
 | `npm run db:reset` | Drop and rebuild the database, then reseed |
+| `npm run test:live` | Tests that call the real Gemini API (needs `GEMINI_API_KEY`) |
 
 ## Signing in
 

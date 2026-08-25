@@ -15,6 +15,7 @@
     "db:verify": "tsx scripts/verifySeed.ts",
     "test": "vitest run",
     "test:watch": "vitest",
+  "test:live": "vitest run --mode live",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run lint && npm run test"

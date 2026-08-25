@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { prisma, type Db } from "../db";
 import { writeAudit } from "../domain/auditLog";
 import { isOk } from "../domain/decision";
+import { flagOffTaskGeneration } from "../domain/misuse";
 import { resolveClient } from "../domain/clientResolution";
 import { applyTransition, type ContentStatus } from "../domain/statusMachine";
 import {
@@ -11,6 +12,12 @@ import {
   type ItemComplianceResult,
 } from "./complianceCheck";
 import { generatePlan, type GeneratedPlanItem } from "./generatePlan";
+import {
+  checkOnTask,
+  judgeOnTaskWithGemini,
+  type OnTaskJudge,
+  type OnTaskVerdict,
+} from "./onTaskCheck";
 import { searchGuidelines } from "./searchGuidelines";
 
 export type RegenerationReference = {
@@ -24,16 +31,24 @@ export type RegenerationReference = {
 export type RegenerateItemInput = {
   prompt: string;
   references?: RegenerationReference[];
+  /**
+   * The creator asking. Required: an off-task prompt raises a flag, and a
+   * conduct flag naming nobody is unactionable.
+   */
+  requestedById: string;
 };
 
 export type RegenerateItemDependencies = {
   generate: typeof generatePlan;
   judge: ComplianceJudge;
+  /** Separate from `judge`: that one rules on compliance, this one on scope. */
+  onTaskJudge: OnTaskJudge;
 };
 
 const defaultDependencies: RegenerateItemDependencies = {
   generate: generatePlan,
   judge: judgeWithGemini,
+  onTaskJudge: judgeOnTaskWithGemini,
 };
 
 export type RegenerateItemResult = {
@@ -46,6 +61,25 @@ export type RegenerateItemResult = {
 
 export class RegenerateItemError extends Error {
   readonly code = "REGENERATE_ITEM_ERROR";
+}
+
+/**
+ * The prompt was not about this client's content.
+ *
+ * A distinct class rather than a `RegenerateItemError`, because this is not a
+ * failure: the system worked, and refused. A caller rendering an error banner
+ * should say something different here than for a broken pipeline, and can
+ * branch on the code.
+ */
+export class OffTaskPromptError extends Error {
+  readonly code = "OFF_TASK_PROMPT";
+  readonly verdict: OnTaskVerdict;
+
+  constructor(verdict: OnTaskVerdict) {
+    super(`This prompt is not about producing content for this client: ${verdict.reason}`);
+    this.name = "OffTaskPromptError";
+    this.verdict = verdict;
+  }
 }
 
 /** Regenerate one existing item under its client's current retrieved rules. */
@@ -69,6 +103,38 @@ export async function regenerateItem(
   const clientOutcome = await resolveClient(existing.campaign.client_id, db);
   if (!isOk(clientOutcome)) {
     throw new RegenerateItemError(`Cannot regenerate for ${existing.campaign.client_id}.`);
+  }
+
+  // Before anything expensive. The plan requires an off-task prompt to "cost
+  // nothing further", so this sits ahead of retrieval, reference loading and
+  // generation -- not merely ahead of the generation call.
+  const verdict = await checkOnTask(
+    input.prompt,
+    {
+      clientId: clientOutcome.value.client_id,
+      clientName: clientOutcome.value.name,
+      contentForm: existing.content_form,
+      platform: existing.platform,
+      contentBody: existing.content_body,
+      campaignTitle: existing.campaign.title,
+      campaignObjective: existing.campaign.objective,
+    },
+    dependencies.onTaskJudge,
+  );
+
+  if (!verdict.onTask) {
+    // Surfaced to the Admin, and the item is left exactly as it was -- a refused
+    // prompt must not cost the creator the draft they already had.
+    await flagOffTaskGeneration(
+      {
+        raisedAgainstId: input.requestedById,
+        prompt: input.prompt,
+        contentItemId,
+        reason: verdict.reason,
+      },
+      db,
+    );
+    throw new OffTaskPromptError(verdict);
   }
 
   const guidelines = await searchGuidelines(existing.campaign.client_id, db);

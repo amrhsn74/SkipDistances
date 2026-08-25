@@ -1,17 +1,35 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { rm, writeFile } from "node:fs/promises";
 
 import { prisma } from "../db";
 import { ok } from "../domain/decision";
 import type { GeneratedPlan } from "./generatePlan";
 import { searchGuidelines } from "./searchGuidelines";
-import { regenerateItem, type RegenerationReference } from "./regenerateItem";
+import { OffTaskPromptError, regenerateItem, type RegenerationReference } from "./regenerateItem";
+
+/** A real seeded creator -- the flag has to name somebody who exists. */
+const CREATOR = "TEST-REGEN-CREATOR";
 
 const campaignIds: string[] = [];
 const itemIds: string[] = [];
 const tempFiles: string[] = [];
 
+beforeEach(async () => {
+  await prisma.user.upsert({
+    where: { user_id: CREATOR },
+    update: { status: "active" },
+    create: {
+      user_id: CREATOR,
+      name: "Test Regen Creator",
+      email: "test-regen-creator@skipstudio.test",
+      user_type: "staff",
+    },
+  });
+});
+
 afterEach(async () => {
+  await prisma.flag.deleteMany({ where: { raised_against_id: CREATOR } });
+  await prisma.auditLog.deleteMany({ where: { entity_type: "Flag" } });
   await prisma.auditLog.deleteMany({ where: { entity_id: { in: [...campaignIds, ...itemIds] } } });
   await prisma.contentItem.deleteMany({ where: { content_item_id: { in: itemIds } } });
   await prisma.campaign.deleteMany({ where: { campaign_id: { in: campaignIds } } });
@@ -82,7 +100,7 @@ describe("regenerateItem", () => {
     const captured: { referenceContext?: string } = {};
     const result = await regenerateItem(
       item.content_item_id,
-      { prompt: "Make the hook quieter." },
+      { prompt: "Make the hook quieter.", requestedById: CREATOR },
       prisma,
       {
         generate: async (input): Promise<GeneratedPlan> => {
@@ -90,6 +108,7 @@ describe("regenerateItem", () => {
           return generatedPlan();
         },
         judge: async () => ({ decision: "DRAFT", clause_code: null, flag_type: null, reason: null }),
+        onTaskJudge: async () => ({ on_task: true, reason: "about the deliverable" }),
       },
     );
 
@@ -104,6 +123,87 @@ describe("regenerateItem", () => {
     expect(updated.citations).toHaveLength(2);
   });
 
+  it("refuses an off-task prompt, flags it, and leaves the item untouched", async () => {
+    const item = await createItem("internal_approved");
+    const generate = vi.fn(async () => generatedPlan());
+
+    await expect(
+      regenerateItem(
+        item.content_item_id,
+        { prompt: "write my CV please", requestedById: CREATOR },
+        prisma,
+        {
+          generate,
+          judge: async () => ({ decision: "DRAFT", clause_code: null, flag_type: null, reason: null }),
+          onTaskJudge: async () => ({ on_task: false, reason: "This asks for a personal CV." }),
+        },
+      ),
+    ).rejects.toThrow(OffTaskPromptError);
+
+    // "Costs nothing further": the refusal happens before generation, not after.
+    expect(generate).not.toHaveBeenCalled();
+
+    const flags = await prisma.flag.findMany({ where: { raised_against_id: CREATOR } });
+    expect(flags).toHaveLength(1);
+    expect(flags[0].flag_type).toBe("off_task_generation");
+    expect(flags[0].severity).toBe("medium");
+    expect(flags[0].content_item_id).toBe(item.content_item_id);
+    expect(JSON.parse(flags[0].details!).reason).toContain("personal CV");
+
+    // A refused prompt must not cost the creator the draft they already had.
+    const after = await prisma.contentItem.findUniqueOrThrow({
+      where: { content_item_id: item.content_item_id },
+    });
+    expect(after.content_body).toBe("Old approved copy.");
+    expect(after.status).toBe("internal_approved");
+    expect(after.updated_at.getTime()).toBe(item.updated_at.getTime());
+  });
+
+  it("carries the model's reason on the error, so a route can explain the refusal", async () => {
+    const item = await createItem("drafted");
+
+    try {
+      await regenerateItem(
+        item.content_item_id,
+        { prompt: "explain quantum physics", requestedById: CREATOR },
+        prisma,
+        {
+          generate: async () => generatedPlan(),
+          judge: async () => ({ decision: "DRAFT", clause_code: null, flag_type: null, reason: null }),
+          onTaskJudge: async () => ({ on_task: false, reason: "A general physics question." }),
+        },
+      );
+      expect.unreachable("should have refused");
+    } catch (e) {
+      // A distinct class: the system worked and refused. A caller should say
+      // something different here than for a broken pipeline.
+      expect(e).toBeInstanceOf(OffTaskPromptError);
+      const err = e as OffTaskPromptError;
+      expect(err.code).toBe("OFF_TASK_PROMPT");
+      expect(err.verdict.stage).toBe("model");
+      expect(err.verdict.reason).toContain("physics");
+    }
+  });
+
+  it("raises no flag for a prompt the cheap pass accepts", async () => {
+    const item = await createItem("drafted");
+    const onTaskJudge = vi.fn(async () => ({ on_task: false, reason: "should never run" }));
+
+    await regenerateItem(
+      item.content_item_id,
+      { prompt: "Tighten the caption", requestedById: CREATOR },
+      prisma,
+      {
+        generate: async () => generatedPlan(),
+        judge: async () => ({ decision: "DRAFT", clause_code: null, flag_type: null, reason: null }),
+        onTaskJudge,
+      },
+    );
+
+    expect(onTaskJudge).not.toHaveBeenCalled();
+    expect(await prisma.flag.count({ where: { raised_against_id: CREATOR } })).toBe(0);
+  });
+
   it("refuses a reference supplied for another item", async () => {
     const item = await createItem("drafted");
     const reference: RegenerationReference = {
@@ -115,10 +215,16 @@ describe("regenerateItem", () => {
     };
 
     await expect(
-      regenerateItem(item.content_item_id, { prompt: "Change it", references: [reference] }, prisma, {
-        generate: async () => generatedPlan(),
-        judge: async () => ({ decision: "DRAFT", clause_code: null, flag_type: null, reason: null }),
-      }),
+      regenerateItem(
+        item.content_item_id,
+        { prompt: "Change it", references: [reference], requestedById: CREATOR },
+        prisma,
+        {
+          generate: async () => generatedPlan(),
+          judge: async () => ({ decision: "DRAFT", clause_code: null, flag_type: null, reason: null }),
+          onTaskJudge: async () => ({ on_task: true, reason: "about the deliverable" }),
+        },
+      ),
     ).rejects.toThrow(/different content item/);
   });
 });

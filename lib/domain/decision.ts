@@ -16,7 +16,14 @@
 
 export type Decision = "DRAFT" | "REQUEST_INFO" | "FLAG" | "REFUSE_OVERRIDE";
 
-/** Flag.flag_type in the ERD. */
+/**
+ * The flag types the engine itself can reach.
+ *
+ * Narrower than `Flag.flag_type` in the schema: the governance types
+ * (role_boundary_violation, off_task_generation, approval_churn) are about
+ * conduct and are raised through `lib/domain/misuse.ts`, never by a drafting
+ * decision. See `AnyFlagType` there for the full vocabulary.
+ */
 export type FlagType =
   | "brand_violation"
   | "compliance_violation"

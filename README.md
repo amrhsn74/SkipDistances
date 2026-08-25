@@ -142,7 +142,7 @@ a network. Only `lib/db.ts` imports the generated Prisma client.
 Following [docs/project-plan.md](docs/project-plan.md), one phase per layer.
 
 - [x] **Phase 1** — Data layer: schema (21 entities) + seed
-- [ ] **Phase 2** — Domain / rules layer
+- [x] **Phase 2** — Domain / rules layer
 - [ ] **Phase 3** — Guarded Content Engine
 - [ ] **Phase 4** — API layer
 - [ ] **Phase 5** — Presentation shell + Account Manager dashboard

@@ -53,6 +53,7 @@ model User {
   assignments         ClientAssignment[]
   managed_clients     Client[]              @relation("AccountManager")
   submitted_campaigns Campaign[]            @relation("SubmittedCampaigns")
+  flags_raised_against Flag[]              @relation("FlagsRaisedAgainst")
   approval_decisions  Approval[]            @relation("ApprovalDecisions")
   platform_connections PlatformConnection[] @relation("PlatformConnections")
   post_requests       PostRequest[]         @relation("PostRequests")
@@ -527,9 +528,23 @@ model Flag {
   /// The rule broken.
   clause_id       String?
 
-  /// brand_violation | compliance_violation | unknown_client | inactive_client |
-  /// cross_client_data | approval_override_attempt
+  /// content -- raised by the engine, about the work:
+  ///   brand_violation | compliance_violation | unknown_client | inactive_client
+  /// governance -- raised anywhere, about a person's conduct, read by the Admin:
+  ///   cross_client_data | approval_override_attempt | role_boundary_violation |
+  ///   off_task_generation | approval_churn
   flag_type String
+
+  /// high | medium | low. Lets the Admin queue rank real breaches above churn.
+  severity String @default("high")
+
+  /// Who did it, for the governance types. Null for engine-raised content flags,
+  /// which are about a brief rather than a person.
+  raised_against_id String?
+
+  /// Free-form JSON context -- the matched phrase, the client reached for, the
+  /// decline count. What makes a queue row actionable rather than just a label.
+  details String?
 
   resolved         Boolean   @default(false)
   resolution_notes String?
@@ -537,11 +552,15 @@ model Flag {
 
   created_at DateTime @default(now())
 
-  campaign Campaign? @relation(fields: [campaign_id], references: [campaign_id], onDelete: Cascade)
+  campaign      Campaign? @relation(fields: [campaign_id], references: [campaign_id], onDelete: Cascade)
+  raised_against User?    @relation("FlagsRaisedAgainst", fields: [raised_against_id], references: [user_id], onDelete: SetNull)
 
   @@index([campaign_id])
   @@index([content_item_id])
   @@index([resolved])
+  @@index([raised_against_id])
+  // The Admin queue's own read: open governance flags, worst first.
+  @@index([resolved, severity])
 }
 
 /// Append-only. Never updated, never deleted.

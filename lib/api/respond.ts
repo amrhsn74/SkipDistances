@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { ClientValidationError } from "../domain/clientRoster";
 import { PermissionDeniedError } from "../domain/permissions";
+import { CampaignValidationError } from "../engine/submitBrief";
 import { PasswordChangeRequiredError, UnauthenticatedError } from "./request";
 
 /**
@@ -43,7 +44,7 @@ export function errorResponse(error: unknown): NextResponse<ApiError> {
     return jsonError(403, error.code, "You may not do that.");
   }
 
-  if (error instanceof ClientValidationError) {
+  if (error instanceof ClientValidationError || error instanceof CampaignValidationError) {
     return NextResponse.json<ApiError>(
       { error: { code: error.code, message: error.message, issues: error.issues } },
       { status: 422 },

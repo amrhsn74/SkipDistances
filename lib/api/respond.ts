@@ -5,6 +5,11 @@ import {
   ApprovalValidationError,
   ContentItemNotFoundError,
 } from "../domain/approvals";
+import {
+  BrandGuideNotAllowedError,
+  BrandGuideNotFoundError,
+  BrandGuideValidationError,
+} from "../domain/brandGuides";
 import { ClientValidationError } from "../domain/clientRoster";
 import { PermissionDeniedError } from "../domain/permissions";
 import {
@@ -115,6 +120,29 @@ export function errorResponse(error: unknown): NextResponse<ApiError> {
     );
   }
 
+  if (error instanceof BrandGuideNotAllowedError) {
+    // 409, as for an approval or a post request the state refuses: the body was
+    // well-formed and the caller is permitted -- it is the version's current
+    // status that refuses. This is what a client gets for approving a version
+    // their account manager has not yet submitted to them.
+    return NextResponse.json<ApiError>(
+      {
+        error: {
+          code: error.code,
+          message: error.message,
+          issues: { status: error.status },
+        },
+      },
+      { status: 409 },
+    );
+  }
+
+  if (error instanceof BrandGuideNotFoundError) {
+    // Reachable only inside the caller's scope -- a version they may not see is
+    // denied by `enforce` first, and answers 403.
+    return jsonError(404, error.code, error.message);
+  }
+
   if (error instanceof PostRequestNotFoundError) {
     // Reachable only inside the caller's scope -- a request they may not see is
     // denied by `enforce` first, and answers 403.
@@ -132,6 +160,7 @@ export function errorResponse(error: unknown): NextResponse<ApiError> {
     error instanceof ApprovalValidationError ||
     error instanceof PostRequestValidationError ||
     error instanceof ClientValidationError ||
+    error instanceof BrandGuideValidationError ||
     error instanceof CampaignValidationError ||
     error instanceof ReferenceValidationError
   ) {

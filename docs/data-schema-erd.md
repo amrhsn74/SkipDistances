@@ -115,7 +115,18 @@ The things the product stores: clients and the market they operate in, the peopl
 | `created_by_id` FK, `client_approved_by_id` FK, nullable | |
 | `created_at`, `approved_at` | |
 
-> Only one version per client is ever active. Past versions stay superseded, never deleted.
+> Only one version per client is ever active. Past versions stay superseded, never deleted — `ContentItem.grounded_brand_guide_version_id` freezes the version a draft was written under, and deleting one would turn every such reference into a dangling claim about what was checked.
+>
+> The lifecycle is small and enforced in `lib/domain/brandGuides.ts`:
+>
+> ```
+> draft --(AM submits)--> pending_client_approval --(client approves)--> active
+>                                                \-(client declines)--> draft
+> ```
+>
+> A declined version returns to `draft` rather than to a terminal `declined` status, for the same reason a declined `ContentItem` resets to `drafted`: it needs fixing by whoever wrote it, and re-enters the client's queue only when someone deliberately resubmits. There is no `declined` value in the status enum at all.
+>
+> **Approval is the only thing that moves `Client.active_brand_guide_id`.** Superseding the outgoing version, promoting the incoming one, and repointing that column happen in one transaction, so the client never has two active guides or none. `retrievalScope.getGuidelinesForClient` reads that column and nothing else, which is what makes "which rules govern this client right now" have exactly one answer.
 
 **GuidelineClause** — the agency standards and every client's brand rules
 | Field | Notes |

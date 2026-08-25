@@ -21,6 +21,7 @@ import {
   PostRequestValidationError,
 } from "../domain/postRequests";
 import { ReferenceValidationError } from "../domain/referenceAttachments";
+import { GateClosedError, SchedulingError } from "../domain/scheduling";
 import { OffTaskPromptError, RegenerateItemError } from "../engine/regenerateItem";
 import { CampaignValidationError } from "../engine/submitBrief";
 import { PasswordChangeRequiredError, UnauthenticatedError } from "./request";
@@ -176,6 +177,30 @@ export function errorResponse(error: unknown): NextResponse<ApiError> {
     error instanceof CampaignValidationError ||
     error instanceof ReferenceValidationError
   ) {
+    return NextResponse.json<ApiError>(
+      { error: { code: error.code, message: error.message, issues: error.issues } },
+      { status: 422 },
+    );
+  }
+
+  if (error instanceof GateClosedError) {
+    // 409, as for an approval the status machine refuses: the body was
+    // well-formed and the caller is permitted -- it is the missing approval
+    // that refuses, and that can change. `blocked_by` names which stage, so the
+    // screen can say "waiting on the client" rather than a bare refusal.
+    return NextResponse.json<ApiError>(
+      {
+        error: {
+          code: error.code,
+          message: error.message,
+          issues: { blocked_by: error.blockedBy.join(", ") },
+        },
+      },
+      { status: 409 },
+    );
+  }
+
+  if (error instanceof SchedulingError) {
     return NextResponse.json<ApiError>(
       { error: { code: error.code, message: error.message, issues: error.issues } },
       { status: 422 },

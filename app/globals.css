@@ -3,11 +3,118 @@
 @tailwind utilities;
 
 /*
- * One light palette, deliberately. A dark mode that inverted these would need a
- * second set of status colours for the approval states in Phase 6, and a review
- * screen whose "declined" red reads differently in two themes is worse than no
- * theme switch at all.
+ * The Skip brand palette, lifted from skipdistances.com.
+ *
+ * One light theme, deliberately. A dark mode would need a second set of status
+ * colours for the approval states, and a review screen whose "declined" red
+ * reads differently in two themes is worse than no theme switch at all.
  */
+:root {
+  /* Brand. Amber is the chrome: header, primary buttons, active nav. */
+  --skip-amber: #f9b42d;
+  --skip-amber-dark: #e5a11c;
+  --skip-ink: #222222;
+
+  /* Text, from the site's global colour 2 and 3. */
+  --skip-heading: #0f172a;
+  --skip-body: #364151;
+
+  --skip-surface: #ffffff;
+  --skip-canvas: #f7f8fa;
+  --skip-border: #d1dae5;
+  /* The site's pale blue, used here for a selected or highlighted row. */
+  --skip-tint: #e7f6ff;
+
+  /*
+   * Status colours, and the reason they are named rather than reached for
+   * ad hoc.
+   *
+   * Amber is now the brand chrome, so it can no longer also mean "attention".
+   * A flagged campaign sitting under an amber header would stop standing out --
+   * and surfacing exactly that is what PRD 6 says this dashboard is for. So
+   * "flagged" moved to a distinct orange-red that still reads as a warning
+   * against amber, and `danger` stays further round for refusals and failures.
+   */
+  --skip-flag: #c2410c;
+  --skip-flag-bg: #ffedd5;
+  --skip-danger: #b91c1c;
+  --skip-danger-bg: #fee2e2;
+  --skip-ok: #15803d;
+  --skip-ok-bg: #dcfce7;
+  --skip-info: #0369a1;
+  --skip-info-bg: #e0f2fe;
+}
+
 body {
-  font-family: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--skip-canvas);
+  color: var(--skip-body);
+  /*
+   * Karla for body, Rubik for headings, Baloo Bhaijaan 2 for buttons and nav --
+   * the three faces the brand site loads. Geist stays as the fallback because
+   * it is bundled locally, so a offline build still renders in something sane.
+   */
+  font-family: var(--font-karla), var(--font-geist-sans), system-ui, sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-rubik), var(--font-geist-sans), system-ui, sans-serif;
+  color: var(--skip-heading);
+  font-weight: 600;
+}
+
+/* Buttons and nav carry the display face, as they do on the brand site. */
+.skip-display {
+  font-family: var(--font-baloo), var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/*
+ * Pilled buttons at 30px, matching the brand site's border-radius exactly.
+ * A component class rather than repeated utilities: the radius and the hover
+ * are brand decisions, and one place to change them is the point.
+ */
+.skip-btn {
+  @apply inline-flex items-center justify-center rounded-[30px] px-5 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50;
+  font-family: var(--font-baloo), var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.skip-btn-primary {
+  background: var(--skip-amber);
+  color: var(--skip-ink);
+}
+
+.skip-btn-primary:hover:not(:disabled) {
+  background: var(--skip-amber-dark);
+}
+
+.skip-btn-secondary {
+  background: transparent;
+  color: var(--skip-ink);
+  border: 2px solid var(--skip-border);
+}
+
+.skip-btn-secondary:hover:not(:disabled) {
+  border-color: var(--skip-ink);
+}
+
+/* Inputs, so a form is one class per field rather than eight utilities. */
+.skip-input {
+  @apply w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors;
+  border-color: var(--skip-border);
+  background: var(--skip-surface);
+  color: var(--skip-heading);
+}
+
+.skip-input:focus {
+  border-color: var(--skip-amber);
+  box-shadow: 0 0 0 3px rgb(249 180 45 / 0.25);
+}
+
+.skip-label {
+  @apply mb-1 block text-sm font-medium;
+  color: var(--skip-heading);
 }

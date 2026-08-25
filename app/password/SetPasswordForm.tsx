@@ -61,7 +61,7 @@ export function SetPasswordForm({ needsCurrent }: { needsCurrent: boolean }) {
     <form onSubmit={submit} className="space-y-4">
       {needsCurrent ? (
         <div>
-          <label htmlFor="current" className="mb-1 block text-sm font-medium text-slate-700">
+          <label htmlFor="current" className="skip-label">
             Current password
           </label>
           <input
@@ -71,13 +71,13 @@ export function SetPasswordForm({ needsCurrent }: { needsCurrent: boolean }) {
             autoComplete="current-password"
             value={current}
             onChange={(e) => setCurrent(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
+            className="skip-input"
           />
         </div>
       ) : null}
 
       <div>
-        <label htmlFor="next" className="mb-1 block text-sm font-medium text-slate-700">
+        <label htmlFor="next" className="skip-label">
           New password
         </label>
         <input
@@ -88,13 +88,13 @@ export function SetPasswordForm({ needsCurrent }: { needsCurrent: boolean }) {
           autoComplete="new-password"
           value={next}
           onChange={(e) => setNext(e.target.value)}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
+          className="skip-input"
         />
-        <p className="mt-1 text-xs text-slate-500">At least 8 characters.</p>
+        <p className="mt-1 text-xs text-body/70">At least 8 characters.</p>
       </div>
 
       <div>
-        <label htmlFor="confirm" className="mb-1 block text-sm font-medium text-slate-700">
+        <label htmlFor="confirm" className="skip-label">
           Confirm new password
         </label>
         <input
@@ -104,12 +104,12 @@ export function SetPasswordForm({ needsCurrent }: { needsCurrent: boolean }) {
           autoComplete="new-password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
+          className="skip-input"
         />
       </div>
 
       {error ? (
-        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p role="alert" className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger">
           {error}
         </p>
       ) : null}
@@ -117,7 +117,7 @@ export function SetPasswordForm({ needsCurrent }: { needsCurrent: boolean }) {
       <button
         type="submit"
         disabled={busy}
-        className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
+        className="skip-btn skip-btn-primary w-full"
       >
         {busy ? "Saving…" : "Set password"}
       </button>

@@ -29,7 +29,25 @@ export const ROLE_SEGMENTS: readonly string[] = Object.values(ROLE_HOME);
 export type NavItem = {
   href: string;
   label: string;
+  /**
+   * Which glyph the sidebar draws. A name, not an SVG: this module is pure and
+   * must not import anything that renders, so the mapping to markup lives in
+   * the component and the vocabulary lives here.
+   */
+  icon: NavIcon;
 };
+
+export type NavIcon =
+  | "overview"
+  | "clients"
+  | "briefs"
+  | "queue"
+  | "calendar"
+  | "review"
+  | "assignments"
+  | "approvals"
+  | "requests"
+  | "governance";
 
 /**
  * The nav for a role.
@@ -45,27 +63,27 @@ export type NavItem = {
  */
 export const ROLE_NAV: Record<EffectiveRole, readonly NavItem[]> = {
   account_manager: [
-    { href: "/AccountManager", label: "Overview" },
-    { href: "/AccountManager/clients", label: "Clients" },
-    { href: "/AccountManager/briefs", label: "Briefs" },
-    { href: "/AccountManager/queue", label: "Queue" },
+    { href: "/AccountManager", label: "Overview", icon: "overview" },
+    { href: "/AccountManager/clients", label: "Clients", icon: "clients" },
+    { href: "/AccountManager/queue", label: "Briefs", icon: "briefs" },
+    { href: "/AccountManager/calendar", label: "Calendar", icon: "calendar" },
   ],
   content_lead: [
-    { href: "/ContentLead", label: "Overview" },
-    { href: "/ContentLead/review", label: "Review" },
+    { href: "/ContentLead", label: "Overview", icon: "overview" },
+    { href: "/ContentLead/review", label: "Review", icon: "review" },
   ],
   content_creator: [
-    { href: "/Creator", label: "Overview" },
-    { href: "/Creator/assignments", label: "Assignments" },
+    { href: "/Creator", label: "Overview", icon: "overview" },
+    { href: "/Creator/assignments", label: "Assignments", icon: "assignments" },
   ],
   client_contact: [
-    { href: "/Client", label: "Overview" },
-    { href: "/Client/approvals", label: "Approvals" },
-    { href: "/Client/requests", label: "Requests" },
+    { href: "/Client", label: "Overview", icon: "overview" },
+    { href: "/Client/approvals", label: "Approvals", icon: "approvals" },
+    { href: "/Client/requests", label: "Requests", icon: "requests" },
   ],
   agency_admin: [
-    { href: "/Admin", label: "Overview" },
-    { href: "/Admin/governance", label: "Governance" },
+    { href: "/Admin", label: "Overview", icon: "overview" },
+    { href: "/Admin/governance", label: "Governance", icon: "governance" },
   ],
 };
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -80,14 +81,14 @@ export function BriefIntake({ clients }: { clients: ClientOption[] }) {
 
       <form onSubmit={submit} className="space-y-4">
         <div>
-          <label htmlFor="client" className="mb-1 block text-sm font-medium text-slate-700">
+          <label htmlFor="client" className="skip-label">
             Client
           </label>
           <select
             id="client"
             value={clientId}
             onChange={(e) => setClientId(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900 sm:w-auto"
+            className="skip-input sm:w-auto"
           >
             {clients.map((c) => (
               <option key={c.client_id} value={c.client_id}>
@@ -96,7 +97,7 @@ export function BriefIntake({ clients }: { clients: ClientOption[] }) {
             ))}
           </select>
           {client?.sensitive_sector ? (
-            <p className="mt-1 text-xs text-amber-700">
+            <p className="mt-1 text-xs text-flag">
               Sensitive sector — everything drafted for this client carries mandatory
               compliance review.
             </p>
@@ -104,20 +105,20 @@ export function BriefIntake({ clients }: { clients: ClientOption[] }) {
         </div>
 
         <div>
-          <label htmlFor="title" className="mb-1 block text-sm font-medium text-slate-700">
-            Title <span className="font-normal text-slate-500">(optional)</span>
+          <label htmlFor="title" className="skip-label">
+            Title <span className="font-normal text-body/70">(optional)</span>
           </label>
           <input
             id="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Left blank, the engine extracts one from the brief."
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
+            className="skip-input"
           />
         </div>
 
         <div>
-          <label htmlFor="brief" className="mb-1 block text-sm font-medium text-slate-700">
+          <label htmlFor="brief" className="skip-label">
             Brief
           </label>
           <textarea
@@ -127,12 +128,12 @@ export function BriefIntake({ clients }: { clients: ClientOption[] }) {
             value={brief}
             onChange={(e) => setBrief(e.target.value)}
             placeholder="What the client asked for, in their words."
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
+            className="skip-input"
           />
         </div>
 
         {error ? (
-          <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p role="alert" className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger">
             {error}
           </p>
         ) : null}
@@ -140,7 +141,7 @@ export function BriefIntake({ clients }: { clients: ClientOption[] }) {
         <button
           type="submit"
           disabled={busy || !clientId}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
+          className="skip-btn skip-btn-primary"
         >
           {busy ? "Running the brief through the engine…" : "Submit brief"}
         </button>
@@ -157,11 +158,14 @@ export function BriefIntake({ clients }: { clients: ClientOption[] }) {
  * refusal and no way to see which rule produced it.
  */
 function Outcome({ result }: { result: IntakeResult }) {
+  // Each outcome gets the same tone its badge would. FLAG is deliberately not
+  // amber: amber is the brand chrome now, and a flag that matched the header
+  // would stop reading as something gone wrong.
   const tone = {
-    DRAFT: "border-emerald-300 bg-emerald-50 text-emerald-900",
-    FLAG: "border-amber-300 bg-amber-50 text-amber-900",
-    REQUEST_INFO: "border-sky-300 bg-sky-50 text-sky-900",
-    REFUSE_OVERRIDE: "border-red-300 bg-red-50 text-red-900",
+    DRAFT: "border-ok/30 bg-ok-bg text-ok",
+    FLAG: "border-flag/30 bg-flag-bg text-flag",
+    REQUEST_INFO: "border-info/30 bg-info-bg text-info",
+    REFUSE_OVERRIDE: "border-danger/30 bg-danger-bg text-danger",
   }[result.outcome];
 
   const headline = {
@@ -172,7 +176,7 @@ function Outcome({ result }: { result: IntakeResult }) {
   }[result.outcome];
 
   return (
-    <div className={`rounded-md border p-4 ${tone}`}>
+    <div className={`rounded-xl border p-4 ${tone}`}>
       <p className="text-sm font-medium">{headline}</p>
       <p className="mt-1 text-sm">
         {result.campaign.title} · {result.counts.drafted} drafted,{" "}
@@ -182,6 +186,12 @@ function Outcome({ result }: { result: IntakeResult }) {
       {result.clauseCode ? (
         <p className="mt-1 font-mono text-xs">Clause {result.clauseCode}</p>
       ) : null}
+      <Link
+        href="/AccountManager/queue"
+        className="mt-3 inline-block text-sm font-semibold underline underline-offset-4"
+      >
+        See it in the queue
+      </Link>
     </div>
   );
 }

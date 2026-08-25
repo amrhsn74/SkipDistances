@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { NextRequest } from "next/server";
 
 import { SESSION_COOKIE } from "@/api/request";
-import { middleware } from "@/middleware";
+import { config, middleware } from "@/middleware";
 
 /**
  * Where the middleware sends a request.
@@ -55,6 +55,30 @@ describe("a visitor with no session", () => {
     // The password screen needs a session to know whose password it is setting.
     expect(redirectTo(middleware(request("/password")))).toBe("/signin?next=%2Fpassword");
   });
+});
+
+/**
+ * The brand assets must stay reachable without a session.
+ *
+ * Not a hypothetical: guarding `/brand` redirected the logo request to sign-in,
+ * and `next/image` was handed an HTML page where it expected a webp. It failed
+ * as a broken image on the sign-in screen -- the one page where the logo has to
+ * work for a visitor who by definition has no session.
+ */
+describe("public assets", () => {
+  /**
+   * Asserted against the matcher rather than the handler, because the matcher is
+   * what actually exempts these paths -- the handler would happily redirect
+   * `/brand/logo.webp`, and never sees it precisely because of this list.
+   */
+  const matcher = config.matcher[0];
+
+  it.each(["brand", "uploads", "_next/static", "favicon.ico", "api"])(
+    "keeps %s out of the matcher",
+    (segment) => {
+      expect(matcher).toContain(segment);
+    },
+  );
 });
 
 describe("a visitor holding a session cookie", () => {

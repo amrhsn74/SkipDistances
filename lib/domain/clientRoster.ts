@@ -1,5 +1,12 @@
 import { prisma, type Db } from "../db";
 import { clientScopeWhere, type ScopeUser } from "./accessScope";
+import {
+  DEFAULT_PAGE_SIZE,
+  toPage,
+  toSkipTake,
+  type Page,
+  type PageRequest,
+} from "./pagination";
 import { writeAudit } from "./auditLog";
 import { isSensitiveSector } from "./sensitiveSector";
 
@@ -79,6 +86,72 @@ export async function listClients(
   });
 
   return rows.map(toRosterEntry);
+}
+
+/** What the roster screen can narrow by. Every field is optional. */
+export type RosterFilters = {
+  /** Matched against name and client id, case-insensitively. */
+  search?: string | null;
+  status?: string | null;
+  /** A market id. A client matches if they operate in it. */
+  marketId?: string | null;
+  /** True for sensitive-sector only, false to exclude them, undefined for both. */
+  sensitiveSector?: boolean | null;
+};
+
+/**
+ * The roster, filtered and paged.
+ *
+ * Separate from {@link listClients} rather than replacing it, because the two
+ * answer different questions: the picker on the brief form wants every client it
+ * may submit for, and paging that would silently hide options past the first
+ * page. A screen pages; a picker does not.
+ *
+ * The count runs against the same `where` as the rows, in the same call, so
+ * "page 3 of 8" cannot disagree with what page 3 actually holds.
+ */
+export async function listClientsPaged(
+  user: ScopeUser,
+  filters: RosterFilters = {},
+  page: PageRequest = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
+  db: Db = prisma,
+): Promise<Page<RosterEntry>> {
+  const scope = await clientScopeWhere(user, db);
+
+  // Scope and filters are ANDed, never merged. A filter that overwrote the
+  // scope's `client_id` clause would turn a scoped read into an unscoped one --
+  // the leak this module exists to prevent.
+  const conditions: Record<string, unknown>[] = [scope];
+
+  const search = (filters.search ?? "").trim();
+  if (search) {
+    // SQLite's LIKE is case-insensitive for ASCII, which is what the client ids
+    // and roster names are. No `mode: "insensitive"` -- the SQLite connector
+    // does not support it, and passing it silently narrows the match to exact.
+    conditions.push({
+      OR: [{ name: { contains: search } }, { client_id: { contains: search } }],
+    });
+  }
+
+  if (filters.status) conditions.push({ status: filters.status });
+
+  if (filters.marketId) {
+    conditions.push({ markets: { some: { market_id: filters.marketId } } });
+  }
+
+  if (filters.sensitiveSector !== undefined && filters.sensitiveSector !== null) {
+    conditions.push({ sensitive_sector: filters.sensitiveSector });
+  }
+
+  const where = { AND: conditions };
+  const { skip, take } = toSkipTake(page);
+
+  const [rows, total] = await Promise.all([
+    db.client.findMany({ where, orderBy: { client_id: "asc" }, skip, take, include: ROSTER_INCLUDE }),
+    db.client.count({ where }),
+  ]);
+
+  return toPage(rows.map(toRosterEntry), total, page);
 }
 
 /** One client, or null when it does not exist or is outside the caller's scope. */

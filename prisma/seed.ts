@@ -28,8 +28,8 @@ type RosterClient = {
 // ---------------------------------------------------------------------------
 
 const MARKETS = [
-  { name: "Egypt", country_code: "EG", calendar_system: "gregorian_and_hijri" },
-  { name: "Saudi Arabia", country_code: "SA", calendar_system: "gregorian_and_hijri" },
+  { name: "Egypt", country_code: "EG", calendar_system: "gregorian_and_hijri", timezone: "Africa/Cairo" },
+  { name: "Saudi Arabia", country_code: "SA", calendar_system: "gregorian_and_hijri", timezone: "Asia/Riyadh" },
 ];
 
 /**
@@ -111,7 +111,7 @@ async function seedMarketsAndOccasions() {
   for (const m of MARKETS) {
     const row = await prisma.market.upsert({
       where: { country_code: m.country_code },
-      update: { name: m.name, calendar_system: m.calendar_system },
+      update: { name: m.name, calendar_system: m.calendar_system, timezone: m.timezone },
       create: m,
     });
     marketIdByCode[m.country_code] = row.market_id;

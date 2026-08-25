@@ -195,6 +195,12 @@ model Market {
   country_code String @unique
   /// informational -- e.g. "gregorian_and_hijri"
   calendar_system String
+  /// IANA zone, e.g. "Africa/Cairo". The reason scheduling needs it: an item
+  /// is scheduled for a wall-clock moment in the market it addresses, and
+  /// Egypt and Saudi are an hour apart -- storing only UTC and rendering in the
+  /// viewer's zone would show a Cairo campaign at the wrong hour to a Riyadh
+  /// reader, and vice versa.
+  timezone String @default("Africa/Cairo")
 
   clients       ClientMarket[]
   occasions     Occasion[]

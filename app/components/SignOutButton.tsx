@@ -10,6 +10,10 @@ import { useState } from "react";
  * page can end for you with an `<img>` tag. `router.refresh()` after it clears
  * the cached server render, so the next paint is the signed-out one rather than
  * a stale page that only corrects itself on reload.
+ *
+ * Outlined in white rather than filled: it sits at the foot of the dark
+ * sidebar, where a filled amber button would outrank the nav's current-page
+ * highlight -- and signing out is not the most important thing on the screen.
  */
 export function SignOutButton() {
   const router = useRouter();
@@ -27,7 +31,7 @@ export function SignOutButton() {
       type="button"
       onClick={signOut}
       disabled={busy}
-      className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 disabled:opacity-50"
+      className="skip-display w-full rounded-pill border-2 border-white/30 px-4 py-2 text-sm font-bold text-white/80 transition-colors hover:border-white hover:bg-white hover:text-ink disabled:opacity-50"
     >
       {busy ? "Signing out…" : "Sign out"}
     </button>

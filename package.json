@@ -15,7 +15,7 @@
     "db:verify": "tsx scripts/verifySeed.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-  "test:live": "vitest run --mode live",
+    "test:live": "vitest run --mode live",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run lint && npm run test"
@@ -36,6 +36,7 @@
     "dotenv": "^17.4.2",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
+    "playwright": "^1.62.1",
     "postcss": "^8",
     "prisma": "^7.9.1",
     "tailwindcss": "^3.4.1",

@@ -69,7 +69,7 @@ export function SignInForm() {
   return (
     <form onSubmit={submit} className="space-y-4">
       <div>
-        <label htmlFor="email" className="mb-1 block text-sm font-medium text-slate-700">
+        <label htmlFor="email" className="skip-label">
           Email
         </label>
         <input
@@ -79,12 +79,12 @@ export function SignInForm() {
           autoComplete="username"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
+          className="skip-input"
         />
       </div>
 
       <div>
-        <label htmlFor="secret" className="mb-1 block text-sm font-medium text-slate-700">
+        <label htmlFor="secret" className="skip-label">
           {mode === "password" ? "Password" : "One-time code"}
         </label>
         <input
@@ -94,12 +94,12 @@ export function SignInForm() {
           autoComplete={mode === "password" ? "current-password" : "one-time-code"}
           value={secret}
           onChange={(e) => setSecret(e.target.value)}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
+          className="skip-input"
         />
       </div>
 
       {error ? (
-        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p role="alert" className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger">
           {error}
         </p>
       ) : null}
@@ -107,7 +107,7 @@ export function SignInForm() {
       <button
         type="submit"
         disabled={busy}
-        className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
+        className="skip-btn skip-btn-primary w-full"
       >
         {busy ? "Signing in…" : "Sign in"}
       </button>
@@ -119,7 +119,7 @@ export function SignInForm() {
           setSecret("");
           setError(null);
         }}
-        className="w-full text-center text-sm text-slate-600 underline underline-offset-4 hover:text-slate-900"
+        className="w-full text-center text-sm text-body underline underline-offset-4 transition-colors hover:text-heading"
       >
         {mode === "password"
           ? "I was given a one-time code"

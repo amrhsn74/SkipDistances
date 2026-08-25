@@ -71,7 +71,13 @@ export function middleware(request: NextRequest) {
  *
  * Static assets and the favicon are excluded so a signed-out visitor still gets
  * a styled sign-in page rather than a redirect loop over its own stylesheet.
+ *
+ * `brand` is excluded for a reason worth stating: the logo appears *on* the
+ * sign-in page, so a visitor with no session must be able to fetch it. Guarding
+ * it would redirect the image request to sign-in, and `next/image` would then be
+ * handed an HTML page where it expected a webp -- which fails as a broken image
+ * rather than as anything that names the cause.
  */
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|uploads).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|brand|uploads).*)"],
 };

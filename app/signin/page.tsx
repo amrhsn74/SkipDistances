@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Suspense } from "react";
 
 import { SignInForm } from "./SignInForm";
@@ -15,21 +16,37 @@ export const metadata = { title: "Sign in · Skip Studio" };
 
 export default function SignInPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Skip Studio
-          </h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Content operations for the agency and its clients.
-          </p>
+    <div className="flex min-h-screen flex-col">
+      {/* The amber band, so the brand is the first thing on screen. */}
+      <div className="bg-amber-brand py-10">
+        <div className="mx-auto flex max-w-sm flex-col items-center px-6">
+          <Image
+            src="/brand/logo.webp"
+            alt="Skip Studio"
+            width={172}
+            height={80}
+            priority
+            className="h-14 w-auto"
+          />
         </div>
+      </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <Suspense fallback={null}>
-            <SignInForm />
-          </Suspense>
+      <div className="flex flex-1 items-start justify-center px-6 py-10">
+        <div className="w-full max-w-sm">
+          <div className="mb-6 text-center">
+            <h1 className="font-heading text-2xl font-semibold text-heading">
+              Content operations
+            </h1>
+            <p className="mt-1 text-sm text-body">
+              Sign in to reach your clients and their work.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-edge bg-surface p-6 shadow-sm">
+            <Suspense fallback={null}>
+              <SignInForm />
+            </Suspense>
+          </div>
         </div>
       </div>
     </div>

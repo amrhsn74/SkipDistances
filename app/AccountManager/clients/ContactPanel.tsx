@@ -114,14 +114,14 @@ export function ContactPanel({
   return (
     <Card title={`Contacts · ${clientName}`}>
       {code ? (
-        <div className="mb-4 rounded-md border border-emerald-300 bg-emerald-50 p-4">
-          <p className="text-sm font-medium text-emerald-900">
+        <div className="mb-4 rounded-xl border-2 border-amber-brand bg-amber-brand/10 p-5">
+          <p className="text-sm font-semibold text-heading">
             One-time code — read this to your contact now.
           </p>
-          <p className="my-2 font-mono text-3xl tracking-[0.3em] text-emerald-950">
+          <p className="my-3 font-mono text-4xl font-bold tracking-[0.3em] text-heading">
             {code.code}
           </p>
-          <p className="text-xs text-emerald-800">
+          <p className="text-xs text-body">
             Expires {new Date(code.expires_at).toLocaleString()}. It is stored hashed, so
             this screen cannot show it again — issue a new one if it is lost.
           </p>
@@ -137,16 +137,16 @@ export function ContactPanel({
           {contacts.map((contact) => (
             <li
               key={contact.user_id}
-              className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2 text-sm"
+              className="flex items-center justify-between rounded-xl border border-edge px-4 py-3 text-sm"
             >
               <span>
-                <span className="font-medium text-slate-900">{contact.name}</span>{" "}
-                <span className="text-slate-500">{contact.email}</span>
+                <span className="font-semibold text-heading">{contact.name}</span>{" "}
+                <span className="text-body/70">{contact.email}</span>
                 <span
                   className={
                     contact.status === "active"
-                      ? "ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-800"
-                      : "ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800"
+                      ? "ml-2 rounded-md border border-ok/20 bg-ok-bg px-2 py-0.5 text-xs font-semibold text-ok"
+                      : "ml-2 rounded-md border border-info/20 bg-info-bg px-2 py-0.5 text-xs font-semibold text-info"
                   }
                 >
                   {contact.status}
@@ -156,7 +156,7 @@ export function ContactPanel({
                 type="button"
                 onClick={() => reissue(contact.user_id)}
                 disabled={busy}
-                className="text-sm text-slate-700 underline underline-offset-4 hover:text-slate-900 disabled:opacity-50"
+                className="text-sm font-semibold text-heading underline underline-offset-4 transition-colors hover:text-flag disabled:opacity-50"
               >
                 New code
               </button>
@@ -171,31 +171,31 @@ export function ContactPanel({
         offering an action the server will refuse is worse than not offering it.
       */}
       {contacts !== null && contacts.length === 0 ? (
-        <form onSubmit={invite} className="space-y-3 border-t border-slate-200 pt-4">
+        <form onSubmit={invite} className="space-y-3 border-t border-edge pt-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Name</label>
+              <label className="skip-label">Name</label>
               <input
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
+                className="skip-input"
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
+              <label className="skip-label">Email</label>
               <input
                 required
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
+                className="skip-input"
               />
             </div>
           </div>
 
           {error ? (
-            <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+            <p role="alert" className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger">
               {error}
             </p>
           ) : null}
@@ -203,7 +203,7 @@ export function ContactPanel({
           <button
             type="submit"
             disabled={busy}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
+            className="skip-btn skip-btn-primary"
           >
             {busy ? "Inviting…" : "Invite contact"}
           </button>
@@ -211,7 +211,7 @@ export function ContactPanel({
       ) : null}
 
       {error && contacts !== null && contacts.length > 0 ? (
-        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p role="alert" className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger">
           {error}
         </p>
       ) : null}

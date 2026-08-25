@@ -1,10 +1,13 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import type { RosterEntry } from "@/domain/clientRoster";
 
-import type { MarketOption } from "./ClientRoster";
+export type MarketOption = { market_id: string; name: string; country_code: string };
+
+
 
 /**
  * The client creation form.
@@ -26,13 +29,9 @@ const CHANNELS = ["instagram", "facebook", "tiktok", "linkedin", "x"];
 
 const TIERS = ["standard", "premium", "enterprise"];
 
-export function CreateClientForm({
-  markets,
-  onCreated,
-}: {
-  markets: MarketOption[];
-  onCreated: (client: RosterEntry) => void;
-}) {
+export function CreateClientForm({ markets }: { markets: MarketOption[] }) {
+  const router = useRouter();
+
   const [name, setName] = useState("");
   const [industry, setIndustry] = useState("");
   const [tier, setTier] = useState("");
@@ -79,7 +78,12 @@ export function CreateClientForm({
       return;
     }
 
-    onCreated(body.client!);
+    // Straight to the new client's page -- onboarding its contact is the next
+    // thing the manager does, and that is where the one-time code lives.
+    router.push(`/AccountManager/clients/${body.client!.client_id}`);
+    // The roster is server-rendered, so the new row appears only once the
+    // router cache is dropped.
+    router.refresh();
   }
 
   return (
@@ -90,7 +94,7 @@ export function CreateClientForm({
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
+            className="skip-input"
           />
         </Field>
 
@@ -103,7 +107,7 @@ export function CreateClientForm({
             required
             value={industry}
             onChange={(e) => setIndustry(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
+            className="skip-input"
           />
         </Field>
       </div>
@@ -113,7 +117,7 @@ export function CreateClientForm({
           {markets.map((market) => (
             <label
               key={market.market_id}
-              className="flex items-center gap-2 rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="flex cursor-pointer items-center gap-2 rounded-pill border-2 border-edge px-4 py-2 text-sm transition-colors hover:border-ink"
             >
               <input
                 type="checkbox"
@@ -131,7 +135,7 @@ export function CreateClientForm({
           {CHANNELS.map((channel) => (
             <label
               key={channel}
-              className="flex items-center gap-2 rounded-md border border-slate-300 px-3 py-2 text-sm capitalize"
+              className="flex cursor-pointer items-center gap-2 rounded-pill border-2 border-edge px-4 py-2 text-sm capitalize transition-colors hover:border-ink"
             >
               <input
                 type="checkbox"
@@ -148,7 +152,7 @@ export function CreateClientForm({
         <select
           value={tier}
           onChange={(e) => setTier(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
+          className="skip-input sm:w-auto"
         >
           <option value="">Not set</option>
           {TIERS.map((t) => (
@@ -160,7 +164,7 @@ export function CreateClientForm({
       </Field>
 
       {error ? (
-        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p role="alert" className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger">
           {error}
         </p>
       ) : null}
@@ -168,7 +172,7 @@ export function CreateClientForm({
       <button
         type="submit"
         disabled={busy || marketIds.length === 0}
-        className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
+        className="skip-btn skip-btn-primary"
       >
         {busy ? "Creating…" : "Create client"}
       </button>
@@ -189,12 +193,12 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-slate-700">{label}</label>
+      <label className="skip-label">{label}</label>
       {children}
       {issue ? (
-        <p className="mt-1 text-xs text-red-700">{issue}</p>
+        <p className="mt-1 text-xs text-danger">{issue}</p>
       ) : hint ? (
-        <p className="mt-1 text-xs text-slate-500">{hint}</p>
+        <p className="mt-1 text-xs text-body/70">{hint}</p>
       ) : null}
     </div>
   );

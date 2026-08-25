@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { redirect } from "next/navigation";
 
 import { currentUser } from "@/api/request";
@@ -32,21 +33,36 @@ export default async function PasswordPage() {
   const first = row.password_hash === null;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            {first ? "Set your password" : "Change your password"}
-          </h1>
-          <p className="mt-1 text-sm text-slate-600">
-            {first
-              ? "The one-time code got you in. Choose a password to keep."
-              : "Signing in elsewhere will need the new one."}
-          </p>
+    <div className="flex min-h-screen flex-col">
+      <div className="bg-amber-brand py-10">
+        <div className="mx-auto flex max-w-sm flex-col items-center px-6">
+          <Image
+            src="/brand/logo.webp"
+            alt="Skip Studio"
+            width={172}
+            height={80}
+            priority
+            className="h-14 w-auto"
+          />
         </div>
+      </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <SetPasswordForm needsCurrent={!first} />
+      <div className="flex flex-1 items-start justify-center px-6 py-10">
+        <div className="w-full max-w-sm">
+          <div className="mb-6 text-center">
+            <h1 className="font-heading text-2xl font-semibold text-heading">
+              {first ? "Set your password" : "Change your password"}
+            </h1>
+            <p className="mt-1 text-sm text-body">
+              {first
+                ? "The one-time code got you in. Choose a password to keep."
+                : "Signing in elsewhere will need the new one."}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-edge bg-surface p-6 shadow-sm">
+            <SetPasswordForm needsCurrent={!first} />
+          </div>
         </div>
       </div>
     </div>

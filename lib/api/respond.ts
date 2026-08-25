@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 
+import {
+  ApprovalNotAllowedError,
+  ApprovalValidationError,
+  ContentItemNotFoundError,
+} from "../domain/approvals";
 import { ClientValidationError } from "../domain/clientRoster";
 import { PermissionDeniedError } from "../domain/permissions";
 import { ReferenceValidationError } from "../domain/referenceAttachments";
@@ -70,7 +75,33 @@ export function errorResponse(error: unknown): NextResponse<ApiError> {
     return jsonError(422, error.code, error.message);
   }
 
+  if (error instanceof ApprovalNotAllowedError) {
+    // 409, not 422. The body was well-formed and the caller is permitted -- it
+    // is the item's current state that refuses, and that state can change. This
+    // is the status a client gets for declining something already published,
+    // where the answer is not "fix your request" but "that post is live, and a
+    // live post needs a take-down rather than a retroactive decline".
+    return NextResponse.json<ApiError>(
+      {
+        error: {
+          code: error.code,
+          message: error.message,
+          issues: { status: error.status },
+        },
+      },
+      { status: 409 },
+    );
+  }
+
+  if (error instanceof ContentItemNotFoundError) {
+    // Reachable only for an item inside the caller's scope: an item they may not
+    // see is denied by `enforce` first, and answers 403. So a 404 here never
+    // discloses whether another client's item exists.
+    return jsonError(404, error.code, error.message);
+  }
+
   if (
+    error instanceof ApprovalValidationError ||
     error instanceof ClientValidationError ||
     error instanceof CampaignValidationError ||
     error instanceof ReferenceValidationError

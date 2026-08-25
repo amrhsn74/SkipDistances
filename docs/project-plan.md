@@ -162,7 +162,7 @@ The Admin is the accountability role: they assign who works on what, and they ar
 - [x] `P4.1` — `app/api/clients/route.ts`: `GET` (list, roster) and `POST` (create — full field set including `market_id`).
 - [x] `P4.2` — `app/api/campaigns/route.ts`: `POST` — accepts a brief, calls `runIntake`, returns the result.
 - [x] `P4.3` — `app/api/content-items/[id]/regenerate/route.ts`: `POST` — accepts prompt text + optional file upload(s), writes `ReferenceAttachment` rows, calls `regenerateItem`.
-- [ ] `P4.4` — `app/api/content-items/[id]/approvals/route.ts`: `POST` — accepts `{ stage, decision, comment, decidedById }`, writes an `Approval` row, re-runs the status machine. This one endpoint serves approve, decline, and late-revoke — they're the same action at the domain layer, per Phase 2.
+- [x] `P4.4` — `app/api/content-items/[id]/approvals/route.ts`: `POST` — accepts `{ stage, decision, comment, decidedById }`, writes an `Approval` row, re-runs the status machine. This one endpoint serves approve, decline, and late-revoke — they're the same action at the domain layer, per Phase 2.
 - [ ] `P4.5` — `app/api/post-requests/route.ts`: `POST` (client creates), `PATCH .../convert` (account manager converts to a real `Campaign` — internally just calls `P4.2`'s logic).
 - [ ] `P4.6` — `app/api/brand-guides/route.ts`: `POST` new version, `POST .../approve` (client approval activates it).
 - [ ] `P4.7` — `app/api/comments/route.ts`: `POST` — on a `PostRequest` or `ContentItem`. No status side-effects, ever (this is worth a one-line test asserting it).

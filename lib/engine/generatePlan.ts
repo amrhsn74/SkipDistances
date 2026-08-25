@@ -60,6 +60,9 @@ export type GeneratePlanInput = {
   analysis: BriefAnalysis;
   calendar: CampaignCalendar;
   guidelines: GuidelineBundle;
+  referenceContext?: string;
+  imageBase64?: string;
+  imageMimeType?: string;
 };
 
 type RawGeneratedPlanItem = {
@@ -162,6 +165,8 @@ export async function generatePlan(
       temperature: TEMPERATURE.creative,
       systemInstruction: SYSTEM_INSTRUCTION,
       maxOutputTokens: 8192,
+      imageBase64: input.imageBase64,
+      imageMimeType: input.imageMimeType,
     },
   );
 
@@ -227,6 +232,8 @@ ${formatCalendarForPrompt(input.calendar, marketNames)}
 
 Guidelines:
 ${formatGuidelinesForPrompt(input.guidelines)}
+
+${input.referenceContext ? `Creator references:\n${input.referenceContext}\n` : ""}
 
 Output requirements:
 - Produce one item per requested deliverable. If a deliverable asks for a count,

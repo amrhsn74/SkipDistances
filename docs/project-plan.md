@@ -126,7 +126,7 @@ The Admin is the accountability role: they assign who works on what, and they ar
 
 **Goal:** the six-step pipeline plus item-level regeneration, calling Gemini only where Phase 2 says a decision is genuinely generative — everything else is Phase 2 functions.
 
-- [ ] `P3.1` — `lib/llm/gemini.ts`: one thin wrapper around `@google/genai`. Reads `GEMINI_API_KEY` from env, one function for text+schema calls, one that also accepts an inline image for vision input. No prompt-template abstraction, no framework — a single file you can read top to bottom.
+- [x] `P3.1` — `lib/llm/gemini.ts`: one thin wrapper around `@google/genai`. Reads `GEMINI_API_KEY` from env, one function for text+schema calls, one that also accepts an inline image for vision input. No prompt-template abstraction, no framework — a single file you can read top to bottom.
   ```ts
   import { GoogleGenAI } from '@google/genai';
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });

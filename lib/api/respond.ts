@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { ClientValidationError } from "../domain/clientRoster";
 import { PermissionDeniedError } from "../domain/permissions";
+import { ReferenceValidationError } from "../domain/referenceAttachments";
+import { OffTaskPromptError, RegenerateItemError } from "../engine/regenerateItem";
 import { CampaignValidationError } from "../engine/submitBrief";
 import { PasswordChangeRequiredError, UnauthenticatedError } from "./request";
 
@@ -44,7 +46,35 @@ export function errorResponse(error: unknown): NextResponse<ApiError> {
     return jsonError(403, error.code, "You may not do that.");
   }
 
-  if (error instanceof ClientValidationError || error instanceof CampaignValidationError) {
+  if (error instanceof OffTaskPromptError) {
+    // 422, not 403. The caller is permitted to regenerate; this particular
+    // prompt was not about the client's content. A 403 would read as "you may
+    // not do this", which is the wrong thing to tell a creator whose next,
+    // on-task prompt will work fine. The attempt is already flagged for the
+    // Admin by `regenerateItem`.
+    return NextResponse.json<ApiError>(
+      {
+        error: {
+          code: error.code,
+          message: error.message,
+          issues: { prompt: error.verdict.reason },
+        },
+      },
+      { status: 422 },
+    );
+  }
+
+  if (error instanceof RegenerateItemError) {
+    // A regeneration that could not run at all -- an unknown item, a reference
+    // belonging to a different item, a model returning the wrong item count.
+    return jsonError(422, error.code, error.message);
+  }
+
+  if (
+    error instanceof ClientValidationError ||
+    error instanceof CampaignValidationError ||
+    error instanceof ReferenceValidationError
+  ) {
     return NextResponse.json<ApiError>(
       { error: { code: error.code, message: error.message, issues: error.issues } },
       { status: 422 },

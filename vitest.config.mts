@@ -42,6 +42,7 @@ export default defineConfig({
       { find: /^@\/llm\//, replacement: path.join(root, "lib/llm/") },
       { find: /^@\/instagram\//, replacement: path.join(root, "lib/instagram/") },
       { find: /^@\/config\//, replacement: path.join(root, "lib/config/") },
+      { find: /^@\/api\//, replacement: path.join(root, "lib/api/") },
       { find: /^@\/tests\//, replacement: path.join(root, "tests/") },
       { find: /^@\/db$/, replacement: path.join(root, "lib/db.ts") },
       { find: /^@\//, replacement: `${root}/` },

@@ -25,6 +25,7 @@
       "@/llm/*": ["./lib/llm/*"],
       "@/instagram/*": ["./lib/instagram/*"],
       "@/config/*": ["./lib/config/*"],
+      "@/api/*": ["./lib/api/*"],
       "@/db": ["./lib/db.ts"],
       "@/tests/*": ["./tests/*"]
     }

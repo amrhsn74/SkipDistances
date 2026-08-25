@@ -10,7 +10,17 @@ import {
   type OverrideDetection,
   checkOverrideAttempt,
 } from "../domain/overrideDetection";
-import type { BriefAnalysis } from "./analyzeBrief";
+import { analyzeBrief, type BriefAnalysis } from "./analyzeBrief";
+import {
+  complianceCheck,
+  judgeWithGemini,
+  type ComplianceJudge,
+  type ItemComplianceResult,
+} from "./complianceCheck";
+import { generatePlan, type GeneratedPlan, type StructuredGenerator } from "./generatePlan";
+import { planningWindow, resolveCalendar, type CampaignCalendar } from "./resolveCalendar";
+import { queueOrFlag, type QueueOrFlagResult } from "./queueOrFlag";
+import { searchGuidelines, type GuidelineBundle } from "./searchGuidelines";
 
 /**
  * The intake pipeline.
@@ -99,6 +109,29 @@ export type RunIntakeInput = {
   analysis: BriefAnalysis;
 };
 
+export type IntakeDependencies = {
+  analyze: (briefText: string) => Promise<BriefAnalysis>;
+  generate: typeof generatePlan;
+  judge: ComplianceJudge;
+};
+
+const defaultDependencies: IntakeDependencies = {
+  analyze: analyzeBrief,
+  generate: generatePlan,
+  judge: judgeWithGemini,
+};
+
+export type IntakeRunResult = {
+  campaignId: string;
+  analysis: BriefAnalysis;
+  intake: IntakeResult;
+  calendar: CampaignCalendar | null;
+  guidelines: GuidelineBundle | null;
+  plan: GeneratedPlan | null;
+  compliance: ItemComplianceResult[] | null;
+  queued: QueueOrFlagResult | null;
+};
+
 /**
  * Steps 2–3 of intake, from an already-extracted brief.
  *
@@ -165,6 +198,87 @@ export async function runIntakeSteps(
     override,
     overrideRefusesScheduling,
   };
+}
+
+/** Run the persisted campaign through the complete guarded intake pipeline. */
+export async function runIntake(
+  campaignId: string,
+  db: Db = prisma,
+  dependencies: IntakeDependencies = defaultDependencies,
+): Promise<IntakeRunResult> {
+  const campaign = await db.campaign.findUnique({
+    where: { campaign_id: campaignId },
+    select: {
+      campaign_id: true,
+      client_id: true,
+      raw_brief_text: true,
+    },
+  });
+
+  if (!campaign) throw new Error(`Campaign ${campaignId} does not exist.`);
+
+  const analysis = await dependencies.analyze(campaign.raw_brief_text);
+  const overrideOutcome = checkOverrideAttempt(overrideSurface(analysis));
+
+  await db.campaign.update({
+    where: { campaign_id: campaignId },
+    data: {
+      title: analysis.title ?? "Untitled campaign",
+      objective: analysis.objective,
+      audience: analysis.audience,
+      channels: analysis.channels.length > 0 ? JSON.stringify(analysis.channels) : null,
+      override_attempt_detected: !isOk(overrideOutcome),
+    },
+  });
+
+  const intake = await runIntakeSteps({ analysis }, db);
+  if (isHalted(intake)) {
+    await db.campaign.update({
+      where: { campaign_id: campaignId },
+      data: { status: intake.outcome.decision === "REQUEST_INFO" ? "info_requested" : "in_progress" },
+    });
+    return {
+      campaignId,
+      analysis,
+      intake,
+      calendar: null,
+      guidelines: null,
+      plan: null,
+      compliance: null,
+      queued: null,
+    };
+  }
+
+  const calendar = await resolveCalendar(
+    intake.client.client_id,
+    planningWindow({ from: analysis.date }),
+    db,
+  );
+  const guidelines = await searchGuidelines(intake.client.client_id, db);
+  const plan = await dependencies.generate(
+    {
+      client: intake.client,
+      analysis,
+      calendar,
+      guidelines,
+    },
+    db,
+  );
+  const compliance = await complianceCheck(
+    { plan, guidelines, briefContext: campaign.raw_brief_text, analysis },
+    dependencies.judge,
+  );
+  const queued = await queueOrFlag(
+    {
+      campaignId,
+      client: intake.client,
+      guidelines,
+      results: compliance,
+    },
+    db,
+  );
+
+  return { campaignId, analysis, intake, calendar, guidelines, plan, compliance, queued };
 }
 
 /**

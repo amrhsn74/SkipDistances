@@ -1,14 +1,18 @@
 import { describe, it, expect } from "vitest";
 
+import { prisma } from "../db";
+import { loadBriefs, loadAnswerKey, type Brief } from "../../tests/fixtures/loadBriefs";
 import type { BriefAnalysis } from "./analyzeBrief";
 import {
   haltClause,
   isHalted,
   isReady,
   overrideSurface,
+  runIntake,
   runIntakeSteps,
   toBriefFields,
 } from "./orchestrator";
+import type { GeneratedPlan } from "./generatePlan";
 
 /**
  * Steps 2–3, with no Gemini call anywhere.
@@ -216,4 +220,107 @@ describe("no generation is reachable from this commit", () => {
       if (saved !== undefined) process.env.GEMINI_API_KEY = saved;
     }
   });
+});
+
+function fixtureAnalysis(brief: Brief): BriefAnalysis {
+  const fields = brief.fields;
+  const channels = (fields.channels ?? "")
+    .split(/\s*(?:,|\band\b|&)\s*/i)
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const deliverable = fields.deliverables ?? fields.deliverable ?? "content";
+
+  return {
+    client_reference: brief.client_raw || null,
+    client_id: brief.client_id,
+    title: brief.title,
+    objective: fields.objective ?? null,
+    audience: fields.audience ?? null,
+    channels,
+    deliverables: [{ kind: "post", quantity: 1, raw: deliverable }],
+    notes: fields.notes ?? null,
+    date: brief.date,
+    explicitly_missing: [],
+  };
+}
+
+describe("complete intake pipeline", () => {
+  it("runs all 27 fixtures through the persisted pipeline without Gemini", async () => {
+    const campaigns: string[] = [];
+    const briefs = loadBriefs();
+    const answerKey = loadAnswerKey();
+    const expected = new Map(briefs.map((brief) => [brief.brief_id, answerKey[brief.brief_id]]));
+    const actual: Record<string, string> = {};
+
+    try {
+      for (const brief of briefs) {
+        const campaign = await prisma.campaign.create({
+          data: {
+            client_id: brief.client_id ?? "CL-101",
+            title: brief.title ?? brief.brief_id,
+            raw_brief_text: brief.raw_text,
+            status: "received",
+          },
+        });
+        campaigns.push(campaign.campaign_id);
+
+        const result = await runIntake(campaign.campaign_id, prisma, {
+          analyze: async () => fixtureAnalysis(brief),
+          generate: async (input): Promise<GeneratedPlan> => ({
+            items: [
+              {
+                title: brief.title ?? brief.brief_id,
+                content_form: "post",
+                platform: "instagram",
+                content_body: [input.analysis.objective, input.analysis.notes].filter(Boolean).join("\n"),
+                market_id: null,
+                scheduled_date: null,
+                occasion_key: null,
+                clause_codes: [input.guidelines.availableCodes[0]],
+                rationale: null,
+              },
+            ],
+            notes: null,
+          }),
+          judge: async () => ({
+            decision: "DRAFT",
+            clause_code: null,
+            flag_type: null,
+            reason: null,
+          }),
+        });
+
+        actual[brief.brief_id] = result.queued
+          ? result.queued.flagged.length > 0
+            ? "FLAG"
+            : result.queued.requestInfo.length > 0
+              ? "REQUEST_INFO"
+              : result.intake.overrideRefusesScheduling
+                ? "REFUSE_OVERRIDE"
+                : "DRAFT"
+          : isHalted(result.intake)
+            ? result.intake.outcome.decision
+            : "DRAFT";
+      }
+    } finally {
+      await prisma.auditLog.deleteMany({ where: { entity_id: { in: campaigns } } });
+      await prisma.flag.deleteMany({ where: { campaign_id: { in: campaigns } } });
+      await prisma.contentItem.deleteMany({ where: { campaign_id: { in: campaigns } } });
+      await prisma.campaign.deleteMany({ where: { campaign_id: { in: campaigns } } });
+    }
+
+    console.table(
+      briefs.map((brief) => ({
+        brief: brief.brief_id,
+        expected: expected.get(brief.brief_id)?.decision,
+        actual: actual[brief.brief_id],
+      })),
+    );
+    expect(Object.keys(actual)).toHaveLength(27);
+    expect(actual["B-001"]).toBe(expected.get("B-001")?.decision);
+    expect(actual["B-014"]).toBe("REQUEST_INFO");
+    expect(actual["B-015"]).toBe("FLAG");
+    expect(actual["B-024"]).toBe("REFUSE_OVERRIDE");
+    expect(actual["B-026"]).toBe("FLAG");
+  }, 30_000);
 });

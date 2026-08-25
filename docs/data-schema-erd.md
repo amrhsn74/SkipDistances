@@ -26,8 +26,37 @@ The things the product stores: clients and the market they operate in, the peopl
 |---|---|
 | `user_id` PK | |
 | `name` | |
+| `email` | unique; the login identifier |
+| `password_hash`, nullable | null until the account is activated — a client contact created by their account manager has no password yet. Hashed, never reversible; never leaves the server. |
 | `user_type` | `staff` \| `client_contact` |
 | `is_agency_admin` | staff only; assigns roles on client records |
+| `must_change_password` | true after an OTP redemption, forcing a password set before anything else is reachable |
+| `status` | `invited` \| `active` \| `disabled` — `invited` means created but never signed in |
+| `last_login_at`, nullable | |
+
+> Every role signs in; there is no anonymous route. A client contact is created by their account manager rather than self-registering, so the account exists before its owner ever sees it — hence `password_hash` nullable and `status = invited` as the starting state.
+
+**LoginOtp** — the one-time code that activates an invited account
+| Field | Notes |
+|---|---|
+| `otp_id` PK | |
+| `user_id` FK → User | |
+| `code_hash` | hashed like a password — a leaked table must not hand over working codes |
+| `expires_at` | short-lived |
+| `consumed_at`, nullable | set on redemption; a code works exactly once |
+| `created_by_id` FK → User | the account manager who issued it, for the audit trail |
+
+> The code is displayed **on screen to the account manager** at creation and never stored in readable form. There is no email integration in this version (PRD §4), so the AM passes it on by whatever channel they already use with that client. It grants nothing by itself: redeeming it only unlocks setting a password.
+
+**Session** — a signed-in user
+| Field | Notes |
+|---|---|
+| `session_id` PK | the opaque token, stored hashed |
+| `user_id` FK → User | |
+| `expires_at`, `created_at` | |
+| `revoked_at`, nullable | set on sign-out |
+
+> Server-side sessions rather than a self-describing token, so a sign-out or a disabled account takes effect immediately. Every request derives the acting user from here — never from a query parameter or header the browser controls.
 
 **ClientAssignment** — per-client team, beyond the default account manager
 | Field | Notes |
@@ -266,13 +295,15 @@ The things the product stores: clients and the market they operate in, the peopl
 
 Five user types, none with a dedicated table — each is a `User` plus, for client-scoped roles, a `ClientAssignment` row. This is what lets Admin assign or reassign anyone by editing a row, with no separate user-management screen.
 
-| Role | user_type | role_on_client | Notes |
-|---|---|---|---|
-| **Account Manager** | `staff` | — (Client.account_manager_id) | Submits briefs; is the internal reviewer unless a content lead is assigned; creates clients; manages PlatformConnection; converts PostRequests. |
-| **Content Creator** *(incl. Marketing Specialist)* | `staff` | `content_creator` | Zero or more per client; authors the full multi-form plan; refines drafts pre-internal-review; attaches image/PDF/doc references when prompting generation or regeneration. |
-| **Content Lead** | `staff` | `content_lead` | Optional; replaces the account manager as internal reviewer for that client, with the same late-revoke power. |
-| **Client** | `client_contact` | `client_approver` | One or more per client. Approves/declines via the same Approval table, stage = client. Sees their assigned account manager; raises PostRequests and Comments; views their own analytics. |
-| **Agency Admin** | `staff`, admin=true | — | Not tied to any one client; edits account_manager_id on Client and rows in ClientAssignment directly. The accountability role: the only actor with a legitimate cross-client view, the only reader of the governance `Flag` queue, and the only role that can change who works on what. Every assignment change they make writes an `AuditLog` row naming them. |
+| Role | user_type | role_on_client | Sees | Notes |
+|---|---|---|---|---|
+| **Account Manager** | `staff` | — (Client.account_manager_id) | Clients they manage | Submits briefs; is the internal reviewer unless a content lead is assigned; creates clients and their client contacts; manages PlatformConnection; converts PostRequests. |
+| **Content Creator** *(incl. Marketing Specialist)* | `staff` | `content_creator` | Clients they are assigned to | Zero or more per client; authors the full multi-form plan; refines drafts pre-internal-review; attaches image/PDF/doc references when prompting generation or regeneration. |
+| **Content Lead** | `staff` | `content_lead` | All clients | Optional per client; replaces the account manager as internal reviewer for that client, with the same late-revoke power. Reviews across accounts, so unlike the creator their view is not scoped by assignment. |
+| **Client** | `client_contact` | `client_approver` | Their own client only | One or more per client. Created by their account manager and activated with a one-time code. Approves/declines via the same Approval table, stage = client. Sees their assigned account manager; raises PostRequests and Comments; views their own analytics. |
+| **Agency Admin** | `staff`, admin=true | — | All clients | Not tied to any one client; edits account_manager_id on Client and rows in ClientAssignment directly. The accountability role: the only reader of the governance `Flag` queue and the only role that can change who works on what. Every assignment change they make writes an `AuditLog` row naming them. |
+
+> Two roles see every client — the Content Lead, because reviewing spans accounts, and the Agency Admin, because oversight is the job. The other three are scoped, and the scope is derived from the signed-in user on every request rather than from anything the browser supplies.
 
 ---
 
@@ -401,5 +432,7 @@ erDiagram
 | Client and reviewer can decline after approval or scheduling | Approval, gate reads most-recent-per-stage, symmetric for both actors |
 | Nothing scheduled or published without both current approvals | Atomic gate re-check in the scheduler — dedicated race-condition test |
 | A published post cannot be silently declined | status = published excluded from decline; separate take-down action |
-| No client's content or guide visible to another client | Every content-bearing table scoped by client_id via campaign_id → Client |
+| No client's content or guide visible to another client | Every content-bearing table scoped by client_id via campaign_id → Client, filtered by `visibleClientIds(user)` derived from the session |
 | Creator can attach reference files for content generation | `ReferenceAttachment`, scoped to one content_item_id, creator-only, image/PDF/doc only |
+| Every role signs in; a client contact is created for them | `User.email` / `password_hash` / `status`, `LoginOtp`, `Session` — account manager issues a one-time code, client redeems it and sets a password |
+| Access differs by role | Client → own client; Account Manager → `account_manager_id` matches; Content Creator → `ClientAssignment` rows; Content Lead and Agency Admin → all clients |

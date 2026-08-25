@@ -63,7 +63,7 @@ Every campaign today is planned, written, scheduled, and published by hand, acro
 - Reference material in any form other than an image or a PDF/document, for guiding content generation — no video references. Video as a generated deliverable itself is in scope.
 - A live trends feed pulled from any external platform — trend input is agency-curated, not sourced automatically
 - Any market beyond Egypt and Saudi Arabia, or any sub-national region within a market
-- User invite flows or general account administration, beyond Admin assigning a client's team
+- Self-service sign-up, password reset by email, SSO, or multi-factor authentication. Accounts are created for people, not requested by them: an account manager creates a client contact and hands over a one-time code. General account administration beyond that, and beyond Admin assigning a client's team, is out of scope.
 - Automated reminders or notifications
 
 ---
@@ -118,6 +118,8 @@ Every campaign today is planned, written, scheduled, and published by hand, acro
 - **Missed schedule deadlines** — a post whose intended time passes without both approvals never becomes scheduled; it stays visible as awaiting approval rather than auto-publishing or silently expiring.
 - **Reminders** — out of scope for this version; the operational summary is the source of truth for what's waiting.
 - **Approval channel** — the product's own review screen is the only channel for internal and client decisions; no email or messaging-app integration.
+- **Accounts and access** — every role signs in with an email and password; there is no anonymous route. A client contact does not self-register: their account manager creates the account and is shown a **one-time code** to pass on by whatever channel they already use. The client redeems that code once, sets their own password, and only then reaches any content. The code expires, is single-use, and grants nothing on its own.
+- **Who sees what** — the Client sees only their own data; the Account Manager and Content Creator see only the clients they are assigned to; the Content Lead and Agency Admin see every client. Scoping is derived from the signed-in user on every request, never from a value the browser supplies.
 
 ---
 

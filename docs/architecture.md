@@ -255,7 +255,17 @@ Three of these are worth being precise about:
 
 **Off-task generation is refused by the model, not by a keyword list.** The creator-facing engine is a company resource, not a general chatbot. But a keyword filter would block legitimate creative work, so the deterministic pass only ever *allows* — only the generation call's own `on_task` judgment refuses. A false positive here blocks someone's actual job; a false negative costs one wasted call.
 
-**The Admin's cross-client view is the deliberate exception.** Every other role is scoped: an account manager sees their assigned clients, a client contact sees one client, a creator sees their assignments. The Admin sees everything, because oversight is the job. That exception is tested explicitly (`P11.6`) so it stays a decision rather than becoming a hole.
+**Cross-client visibility is granted to exactly two roles, deliberately.** The Agency Admin sees everything because oversight is the job, and the Content Lead does because they review across accounts. Everyone else is scoped: an account manager sees their assigned clients, a content creator sees their assignments, a client contact sees one client. Those exceptions are tested explicitly (`P11.6`) so they stay decisions rather than becoming holes.
+
+| Role | Sees |
+|---|---|
+| Client | Their own client only |
+| Account Manager | Clients where they are `account_manager_id` |
+| Content Creator | Clients they hold a `ClientAssignment` on |
+| Content Lead | All clients |
+| Agency Admin | All clients |
+
+Scope is derived from the signed-in user on every request. It is never read from a query parameter, a header, or any other value the browser controls — a client who edits a URL gets their own data or an error, never someone else's.
 
 ---
 

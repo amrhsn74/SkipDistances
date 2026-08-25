@@ -112,6 +112,7 @@ Every campaign today is planned, written, scheduled, and published by hand, acro
 - **Trends** — agency-curated, attached by staff to a brief; not pulled from a live external feed.
 - **Photoshoots** — treated as a planning artifact (a shot list and schedule slot), not an AI-generated asset; the resulting real-world footage is uploaded afterward like any other asset.
 - **Instagram connection, this version** — built and tested against one Professional (Business or Creator) account added as a developer-mode tester, since Instagram's personal accounts have no API access at all, Professional accounts cannot be private, and full production access to arbitrary client accounts requires a multi-week platform review that doesn't fit this build. The integration itself is real; its reach for this version is intentionally narrow.
+- **Editing or withdrawing a calendar request** — a client may edit or withdraw their own `PostRequest` while it is still `new`, and loses that ability the moment an account manager starts reviewing it. Not a one-shot submission: a client who picked the wrong day should fix it themselves rather than filing a second request and leaving the account manager to guess which one is live. A withdrawn request is kept, marked withdrawn, rather than deleted — the comments on it are part of the client's conversation with their account manager. This is a request-level convenience only; it touches nothing the approval gate reads, since a `PostRequest` carries no authority in the first place.
 - **A client comment is not a decision** — a comment on a request or a post never withdraws an approval or changes its status by itself; only a formal approve/decline action, or a deliberate edit, does that.
 - **Reference attachments** — a content creator only, at the moment of prompting a generation or regeneration; scoped to one piece of content; image or PDF/document only.
 - **Analytics access** — the account manager (their own clients) and the client (their own account) only, for this version; not extended to content creators.
@@ -125,11 +126,9 @@ Every campaign today is planned, written, scheduled, and published by hand, acro
 
 ## 7. Open Questions
 
-The three open questions from the original scope have been resolved through design: roster tier is informational only (§6); content is modeled per deliverable, not adapted across channels (§6); multiple creators share a draft without checkout, relying on revision history (§6). One question remains from the features added since:
+All open questions are now resolved. The three from the original scope were resolved through design: roster tier is informational only (§6); content is modeled per deliverable, not adapted across channels (§6); multiple creators share a draft without checkout, relying on revision history (§6).
 
-| Question | Who needs to answer it | Needed by |
-|---|---|---|
-| Can a client edit or withdraw a calendar request before the account manager reviews it, or is it a one-shot submission once sent? | You (project owner) | Before finalizing the client dashboard's request screen |
+The one question from the features added since — whether a client can edit or withdraw a calendar request before the account manager reviews it — was answered by the project owner: **they can.** A request is editable and withdrawable by the client who raised it, right up until an account manager starts reviewing it. See §6 for what that means in practice.
 
 ---
 

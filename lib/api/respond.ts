@@ -7,6 +7,11 @@ import {
 } from "../domain/approvals";
 import { ClientValidationError } from "../domain/clientRoster";
 import { PermissionDeniedError } from "../domain/permissions";
+import {
+  PostRequestNotAllowedError,
+  PostRequestNotFoundError,
+  PostRequestValidationError,
+} from "../domain/postRequests";
 import { ReferenceValidationError } from "../domain/referenceAttachments";
 import { OffTaskPromptError, RegenerateItemError } from "../engine/regenerateItem";
 import { CampaignValidationError } from "../engine/submitBrief";
@@ -93,6 +98,29 @@ export function errorResponse(error: unknown): NextResponse<ApiError> {
     );
   }
 
+  if (error instanceof PostRequestNotAllowedError) {
+    // 409, as for an approval the status machine refuses: the body was
+    // well-formed and the caller is permitted -- it is the row's current state
+    // that refuses. This is what a client gets for editing a request their
+    // account manager has already taken.
+    return NextResponse.json<ApiError>(
+      {
+        error: {
+          code: error.code,
+          message: error.message,
+          issues: { status: error.status },
+        },
+      },
+      { status: 409 },
+    );
+  }
+
+  if (error instanceof PostRequestNotFoundError) {
+    // Reachable only inside the caller's scope -- a request they may not see is
+    // denied by `enforce` first, and answers 403.
+    return jsonError(404, error.code, error.message);
+  }
+
   if (error instanceof ContentItemNotFoundError) {
     // Reachable only for an item inside the caller's scope: an item they may not
     // see is denied by `enforce` first, and answers 403. So a 404 here never
@@ -102,6 +130,7 @@ export function errorResponse(error: unknown): NextResponse<ApiError> {
 
   if (
     error instanceof ApprovalValidationError ||
+    error instanceof PostRequestValidationError ||
     error instanceof ClientValidationError ||
     error instanceof CampaignValidationError ||
     error instanceof ReferenceValidationError

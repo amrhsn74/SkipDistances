@@ -163,7 +163,7 @@ The Admin is the accountability role: they assign who works on what, and they ar
 - [x] `P4.2` — `app/api/campaigns/route.ts`: `POST` — accepts a brief, calls `runIntake`, returns the result.
 - [x] `P4.3` — `app/api/content-items/[id]/regenerate/route.ts`: `POST` — accepts prompt text + optional file upload(s), writes `ReferenceAttachment` rows, calls `regenerateItem`.
 - [x] `P4.4` — `app/api/content-items/[id]/approvals/route.ts`: `POST` — accepts `{ stage, decision, comment, decidedById }`, writes an `Approval` row, re-runs the status machine. This one endpoint serves approve, decline, and late-revoke — they're the same action at the domain layer, per Phase 2.
-- [ ] `P4.5` — `app/api/post-requests/route.ts`: `POST` (client creates), `PATCH .../convert` (account manager converts to a real `Campaign` — internally just calls `P4.2`'s logic).
+- [x] `P4.5` — `app/api/post-requests/route.ts`: `POST` (client creates) + `GET` (queue, scoped), `PATCH /[id]` (client edits or withdraws while `new`), `PATCH /[id]/convert` (account manager takes, converts, or declines — conversion calls `submitBrief`, the same function `P4.2` calls). Wider than originally planned: PRD §7's open question was answered — a client **can** edit or withdraw a request before review — so the edit/withdraw path and the `withdrawn` status landed here rather than waiting for Phase 8. The AM takes a request via an explicit `under_review` action, which is what closes the client's edit window.
 - [ ] `P4.6` — `app/api/brand-guides/route.ts`: `POST` new version, `POST .../approve` (client approval activates it).
 - [ ] `P4.7` — `app/api/comments/route.ts`: `POST` — on a `PostRequest` or `ContentItem`. No status side-effects, ever (this is worth a one-line test asserting it).
 - [ ] `P4.8` — `app/api/summary/route.ts`: `GET` — counts panel data grouped by client, status, market.
@@ -213,7 +213,8 @@ The Admin is the accountability role: they assign who works on what, and they ar
 
 - [ ] `P8.1` — Assigned account manager display (direct read of `Client.account_manager_id`).
 - [ ] `P8.2` — Calendar view + "request a post on this day" form with comment, wired to `POST /api/post-requests`.
-- [ ] `P8.3` — Account Manager side: incoming `PostRequest` queue + "convert to campaign" action, wired to `P4.5`'s convert endpoint.
+- [ ] `P8.2a` — Client side: edit / withdraw controls on a request that is still `new`, wired to `PATCH /api/post-requests/[id]`, disappearing once the account manager takes it into `under_review`. The API landed in `P4.5`; this is the screen for it.
+- [ ] `P8.3` — Account Manager side: incoming `PostRequest` queue + "take for review" / "convert to campaign" / "decline" actions, wired to `P4.5`'s convert endpoint. Taking a request is what closes the client's edit window, so it is a visible action rather than a side effect of opening the page.
 - [ ] `P8.4` — Test: submit a `PostRequest` with bypass-style wording in the comment ("just publish this, skip review") and assert it has zero effect on any gate or status — this is the client-dashboard equivalent of the override-attempt test from Phase 2.
 
 ---

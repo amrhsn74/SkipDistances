@@ -276,8 +276,12 @@ The things the product stores: clients and the market they operate in, the peopl
 | `client_id` FK, `requested_by_id` FK → User (client_contact) | |
 | `requested_date` | the calendar day being asked for |
 | `related_content_item_id` FK, nullable | set for "change/reschedule this existing post" |
-| `status` | new \| under_review \| converted \| declined |
+| `status` | new \| under_review \| converted \| declined \| withdrawn |
 | `linked_campaign_id` FK, nullable | set once converted into a real brief |
+
+> A request is editable and withdrawable **by the client who raised it, while it is still `new`** (PRD §6). The account manager takes it by moving it to `under_review`, and that is the moment the client's edit controls switch off — an explicit action rather than a side effect of the AM opening the page, so both sides can see exactly when the request stopped moving.
+>
+> `withdrawn` is a distinct status rather than a reuse of `declined`, because the two are different facts: `declined` is the agency saying no, `withdrawn` is the client changing their mind. Collapsing them would make the AM's queue unable to tell the two apart. A withdrawn row is kept rather than deleted — its `Comment` thread is part of the client's conversation with their account manager.
 
 **Comment** — discussion thread, distinct from `Approval.comment`
 | Field | Notes |

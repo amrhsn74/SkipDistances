@@ -652,7 +652,9 @@ model PostRequest {
   /// Set for "change/reschedule this existing post".
   related_content_item_id String?
 
-  /// new | under_review | converted | declined
+  /// new | under_review | converted | declined | withdrawn
+  /// Editable/withdrawable by the requesting client while `new`; the account
+  /// manager takes it by moving it to `under_review`, which locks it.
   status String @default("new")
   /// Set once converted into a real brief.
   linked_campaign_id String?

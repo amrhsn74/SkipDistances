@@ -40,7 +40,8 @@ export type AuditEntityType =
   | "Comment"
   | "MediaAsset"
   | "ReferenceAttachment"
-  | "ClientAssignment";
+  | "ClientAssignment"
+  | "LoginOtp";
 
 export type WriteAuditInput = {
   entityType: AuditEntityType;

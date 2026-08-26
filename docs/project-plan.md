@@ -313,12 +313,12 @@ The role split this phase builds to. `P14.1a` is the permission change; every la
 
 > **Open question, deliberately not resolved here.** Granting the AM `client.assign_roles` overlaps the Agency Admin, whose PRD §2 purpose is "assigns each client's account manager, reviewer, and creators". Both keep it below, so nothing is lost — but if the Admin is meant to stay the sole assigner, `P14.1a` is the one task to change, and PRD §2's Admin row should say so.
 
-- [ ] `P14.1a` — `lib/domain/permissions.ts`: add `content.chat` (open/append to a conversation) and `task.assign` (assign an item to a creator) to `ACTIONS`, both client-scoped. Grant `client.assign_roles` to `account_manager`. Grant `content.chat` to `content_creator` and `content_lead`; `task.assign` to `content_lead`. Update `permissions.test.ts`'s per-role expectations in the same commit — that test is the readable statement of the matrix, so it changes with it, not after.
-- [ ] `P14.1b` — `prisma/schema.prisma`: `ContentItem.assigned_to_id` (nullable FK to `User`) — the lead's assignment of an item to a creator. Nullable because an item produced by a creator's own chat is already theirs. Migrate. `lib/domain/taskAssignment.ts`: assign/reassign, enforces `task.assign`, target must hold `content_creator` on that client, writes `AuditLog`. Unit tests: assigning to a non-creator is refused; assigning across clients is refused.
+- [x] `P14.1a` — `lib/domain/permissions.ts`: add `content.chat` (open/append to a conversation) and `task.assign` (assign an item to a creator) to `ACTIONS`, both client-scoped. Grant `client.assign_roles` to `account_manager`. Grant `content.chat` to `content_creator` and `content_lead`; `task.assign` to `content_lead`. Update `permissions.test.ts`'s per-role expectations in the same commit — that test is the readable statement of the matrix, so it changes with it, not after.
+- [x] `P14.1b` — `prisma/schema.prisma`: `ContentItem.assigned_to_id` (nullable FK to `User`) — the lead's assignment of an item to a creator. Nullable because an item produced by a creator's own chat is already theirs. Migrate. `lib/domain/taskAssignment.ts`: assign/reassign, enforces `task.assign`, target must hold `content_creator` on that client, writes `AuditLog`. Unit tests: assigning to a non-creator is refused; assigning across clients is refused.
 
 ### Design docs
 
-- [ ] `P14.1` — Doc pass, before any code:
+- [x] `P14.1` — Doc pass, before any code:
   - `docs/PRD.md` §2: rewrite three rows to the table above. Content Creator originates content in conversation with the engine, not only refines an existing draft. Content Lead gains AI prompting and task assignment alongside internal approval. Account Manager gains staff assignment. The brief-driven path stays, it is no longer the only one.
   - `docs/PRD.md` §3: new "Chat-led creation" bullet alongside "Guarded content engine", stating explicitly that conversational output goes through the identical guards.
   - `docs/architecture.md` §256: the "not a general chatbot" line is now wrong as written. Replace it with the rule that actually holds — the engine is scoped to *the client the conversation is about*, and off-task refusal is now judged against the thread rather than a lone prompt.
@@ -326,37 +326,37 @@ The role split this phase builds to. `P14.1a` is the permission change; every la
 
 ### Data layer
 
-- [ ] `P14.2` — `prisma/schema.prisma`: `Conversation` — `conversation_id`, `client_id` (FK, the scope that makes grounding and access control meaningful), `created_by_id` (the creator), `campaign_id` (nullable — set once the thread produces a campaign), `title`, `status` (`active` | `archived`), timestamps. Indexed `[created_by_id, client_id]` and `[client_id]`. Migrate.
-- [ ] `P14.3` — `prisma/schema.prisma`: `ConversationTurn` — `turn_id`, `conversation_id`, `role` (`creator` | `assistant` | `system`), `body`, `flag_id` (nullable — set when this turn was refused), `created_at`. `ReferenceAttachment` gains nullable `turn_id` so an attachment belongs to the turn it arrived on; the existing `content_item_id` stays, so nothing already stored is orphaned. Migrate. Indexed `[conversation_id, created_at]`.
+- [x] `P14.2` — `prisma/schema.prisma`: `Conversation` — `conversation_id`, `client_id` (FK, the scope that makes grounding and access control meaningful), `created_by_id` (the creator), `campaign_id` (nullable — set once the thread produces a campaign), `title`, `status` (`active` | `archived`), timestamps. Indexed `[created_by_id, client_id]` and `[client_id]`. Migrate.
+- [x] `P14.3` — `prisma/schema.prisma`: `ConversationTurn` — `turn_id`, `conversation_id`, `role` (`creator` | `assistant` | `system`), `body`, `flag_id` (nullable — set when this turn was refused), `created_at`. `ReferenceAttachment` gains nullable `turn_id` so an attachment belongs to the turn it arrived on; the existing `content_item_id` stays, so nothing already stored is orphaned. Migrate. Indexed `[conversation_id, created_at]`.
 
 ### Domain layer
 
-- [ ] `P14.4` — `lib/domain/conversations.ts`: create/load/append, all scoped. A creator reaches only their own threads for clients they are assigned to; Content Lead and Admin read across clients per `P2.E`'s `visibleClientIds`. Writes `AuditLog` on creation. Unit tests: a creator cannot open or append to another creator's thread, nor any thread for a client they are not assigned to.
-- [ ] `P14.5` — `lib/domain/briefAccumulation.ts`: fold a transcript into the four Clause 0.5 fields (client, objective, audience, channels). Pure — takes turns, returns fields plus what is still missing. **This is what makes the chat honour Clause 0.5 rather than bypass it:** the missing-field list becomes the agent's next question instead of a dead-end REQUEST_INFO. Unit tests: a thread that never states an audience reports `audience` missing; a thread that states everything across four separate turns folds to complete.
+- [x] `P14.4` — `lib/domain/conversations.ts`: create/load/append, all scoped. A creator reaches only their own threads for clients they are assigned to; Content Lead and Admin read across clients per `P2.E`'s `visibleClientIds`. Writes `AuditLog` on creation. Unit tests: a creator cannot open or append to another creator's thread, nor any thread for a client they are not assigned to.
+- [x] `P14.5` — `lib/domain/briefAccumulation.ts`: fold a transcript into the four Clause 0.5 fields (client, objective, audience, channels). Pure — takes turns, returns fields plus what is still missing. **This is what makes the chat honour Clause 0.5 rather than bypass it:** the missing-field list becomes the agent's next question instead of a dead-end REQUEST_INFO. Unit tests: a thread that never states an audience reports `audience` missing; a thread that states everything across four separate turns folds to complete.
 
 ### Engine
 
-- [ ] `P14.6` — `lib/engine/onTaskCheck.ts`, extended: judge a turn against the thread's established client and deliverable, not the turn alone. "Make it shorter" is meaningless in isolation and must pass in context; "write my CV" must not, at any turn depth. The asymmetry from `P3.11` is kept exactly — the deterministic pass may only ever ALLOW. Tests: a bare follow-up passes mid-thread; an off-task turn is refused at turn 1 and at turn 9; gradual drift across turns is caught.
-- [ ] `P14.7` — `lib/engine/chatTurn.ts`: the turn handler. On-task check → append turn → fold the transcript (`P14.5`) → if fields are incomplete, return the agent's clarifying question and stop; if complete, create or reuse the thread's `Campaign` and run the existing `runIntakeSteps` → `generatePlan` → `complianceCheck`. Items are written exactly as the brief path writes them, `status = drafted`. No new generation code — this composes what Phase 3 already built.
-- [ ] `P14.8` — Off-task refusal writes the flag as `P3.11` does, and now sets `ConversationTurn.flag_id`, so the Admin's queue row links to the turn in its thread rather than to a 500-char excerpt. `flagOffTaskGeneration` gains an optional `conversationId`.
+- [x] `P14.6` — `lib/engine/onTaskCheck.ts`, extended: judge a turn against the thread's established client and deliverable, not the turn alone. "Make it shorter" is meaningless in isolation and must pass in context; "write my CV" must not, at any turn depth. The asymmetry from `P3.11` is kept exactly — the deterministic pass may only ever ALLOW. Tests: a bare follow-up passes mid-thread; an off-task turn is refused at turn 1 and at turn 9; gradual drift across turns is caught.
+- [x] `P14.7` — `lib/engine/chatTurn.ts`: the turn handler. On-task check → append turn → fold the transcript (`P14.5`) → if fields are incomplete, return the agent's clarifying question and stop; if complete, create or reuse the thread's `Campaign` and run the existing `runIntakeSteps` → `generatePlan` → `complianceCheck`. Items are written exactly as the brief path writes them, `status = drafted`. No new generation code — this composes what Phase 3 already built.
+- [x] `P14.8` — Off-task refusal writes the flag as `P3.11` does, and now sets `ConversationTurn.flag_id`, so the Admin's queue row links to the turn in its thread rather than to a 500-char excerpt. `flagOffTaskGeneration` gains an optional `conversationId`.
 
 ### API
 
-- [ ] `P14.9` — `app/api/conversations/route.ts`: `GET` (the creator's threads, scoped) and `POST` (open a thread for a client — enforces `content.generate` against that client).
-- [ ] `P14.10` — `app/api/conversations/[id]/turns/route.ts`: `POST`, multipart like `P4.3` — prompt plus optional reference files, calls `chatTurn`. Returns the assistant turn, any produced items, and the compliance decision. A refused turn is a 200 carrying the refusal, matching how `P4.3` treats a flagged regeneration.
-- [ ] `P14.11` — `app/api/conversations/[id]/route.ts`: `GET` full transcript with turns, attachments and produced items. Access per `P14.4`.
+- [x] `P14.9` — `app/api/conversations/route.ts`: `GET` (the creator's threads, scoped) and `POST` (open a thread for a client — enforces `content.generate` against that client).
+- [x] `P14.10` — `app/api/conversations/[id]/turns/route.ts`: `POST`, multipart like `P4.3` — prompt plus optional reference files, calls `chatTurn`. Returns the assistant turn, any produced items, and the compliance decision. A refused turn is a 200 carrying the refusal, matching how `P4.3` treats a flagged regeneration.
+- [x] `P14.11` — `app/api/conversations/[id]/route.ts`: `GET` full transcript with turns, attachments and produced items. Access per `P14.4`.
 
 ### Presentation
 
-- [ ] `P14.12` — `/Creator/chat`: thread list, and the conversation view — turns, attachments, and the items produced inline. A produced item shows its clause citations, the same as the review screen.
-- [ ] `P14.12a` — `/ContentLead/chat`: the same conversation view, reusing `P14.12`'s components rather than a second implementation. The lead's threads are cross-client, so the thread list carries a client column the creator's does not need. This also closes the gap where the lead holds `content.regenerate` today with no UI to reach it.
-- [ ] `P14.12b` — `/ContentLead` assignment UI: assign a produced item to one of the client's creators, wired to `P14.1b`. The assigned creator sees it in their queue (`P7.x`).
-- [ ] `P14.13` — Submit-for-review from the chat: items produced in a thread go to internal review through the existing `submitForReview` (`P6.x`), unchanged. Nothing about the gate is re-implemented here.
-- [ ] `P14.14` — `/Admin` misuse queue (`P11.4`) gains transcript context: an `off_task_generation` row opens the thread around the refused turn. This is the conduct-review view the phase exists for.
+- [x] `P14.12` — `/Creator/chat`: thread list, and the conversation view — turns, attachments, and the items produced inline. A produced item shows its clause citations, the same as the review screen.
+- [x] `P14.12a` — `/ContentLead/chat`: the same conversation view, reusing `P14.12`'s components rather than a second implementation. The lead's threads are cross-client, so the thread list carries a client column the creator's does not need. This also closes the gap where the lead holds `content.regenerate` today with no UI to reach it.
+- [x] `P14.12b` — `/ContentLead` assignment UI: assign a produced item to one of the client's creators, wired to `P14.1b`. The assigned creator sees it in their queue (`P7.x`).
+- [x] `P14.13` — Submit-for-review from the chat: items produced in a thread go to internal review through the existing `submitForReview` (`P6.x`), unchanged. Nothing about the gate is re-implemented here.
+- [x] `P14.14` — `/Admin` misuse queue (`P11.4`) gains transcript context: an `off_task_generation` row opens the thread around the refused turn. This is the conduct-review view the phase exists for.
 
 ### Tests
 
-- [ ] `P14.15` — Scenario tests, added to `P12.2`:
+- [x] `P14.15` — Scenario tests, added to `P12.2`:
   - An incomplete chat never produces an item — it asks, per Clause 0.5
   - A chat naming an unknown or inactive client flags per Clause 0.6, exactly as a brief does
   - An item produced in chat cannot be scheduled without both approvals recorded

@@ -170,10 +170,13 @@ export async function chatTurn(
     return { status: "asking", accumulated, assistantMessage: question };
   }
 
-  const briefText = toBriefText(accumulated, [
-    ...conversation.turns,
-    { role: "creator", body: text },
-  ]);
+  // The conversation's client, passed explicitly: the campaign row is filed
+  // against it, so the brief must name it too. See `toBriefText`.
+  const briefText = toBriefText(
+    accumulated,
+    [...conversation.turns, { role: "creator", body: text }],
+    conversation.client.name,
+  );
 
   // The same function the account manager's form calls. Everything the brief
   // path guarantees follows from this line and nothing else in this module.

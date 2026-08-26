@@ -130,9 +130,24 @@ export function foldExtractions(extractions: TurnExtraction[]): AccumulatedBrief
 export function toBriefText(
   accumulated: AccumulatedBrief,
   turns: FoldableTurn[],
+  /**
+   * The conversation's own client, which outranks anything the turns said.
+   *
+   * A thread is opened for one client and stays with it. If a creator writes
+   * "actually, make this for NileFit" in a Cairo Roast thread, the brief must
+   * still say Cairo Roast -- the campaign row is filed against the thread's
+   * client, and a brief naming a different one would put `resolveClient` and
+   * the campaign row into disagreement. `queueOrFlag` refuses that outright,
+   * which would surface as a crash rather than as the cross-client refusal it
+   * actually is.
+   *
+   * The creator's words are still carried below, so an attempt to switch client
+   * is visible to a reviewer rather than silently erased.
+   */
+  clientName?: string | null,
 ): string {
   const lines = [
-    `Client: ${accumulated.fields.client ?? ""}`,
+    `Client: ${clientName ?? accumulated.fields.client ?? ""}`,
     `Objective: ${accumulated.fields.objective ?? ""}`,
     `Audience: ${accumulated.fields.audience ?? ""}`,
     `Channels: ${accumulated.fields.channels ?? ""}`,

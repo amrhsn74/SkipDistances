@@ -47,6 +47,12 @@ export const ACTIONS = [
   "content.edit_draft",
   "content.attach_reference",
   "content.regenerate",
+  // Opening or appending to a conversation with the engine (Phase 14). Distinct
+  // from `content.generate`: generate is the act of producing an item, chat is
+  // reaching the surface that may produce one. A role can hold either alone.
+  "content.chat",
+  // Assigning a produced item to a creator. The lead's dispatch power.
+  "task.assign",
 
   // Review and approval
   "approval.internal",
@@ -87,6 +93,10 @@ const CAPABILITIES: Record<EffectiveRole, ReadonlySet<Action>> = {
   account_manager: new Set<Action>([
     "client.create",
     "client.edit",
+    // Staffing a client is the account manager's, as the owner of the
+    // relationship. The agency admin keeps it too, as an oversight backstop --
+    // see the note on `agency_admin` below.
+    "client.assign_roles",
     "client.issue_otp",
     "campaign.submit",
     "campaign.view",
@@ -112,6 +122,8 @@ const CAPABILITIES: Record<EffectiveRole, ReadonlySet<Action>> = {
     // The creator is the only role that attaches reference material.
     "content.attach_reference",
     "content.regenerate",
+    // The creator's primary surface: content originates in conversation.
+    "content.chat",
     // Staging only. Scheduling stays gate-controlled regardless of who staged
     // the work, and a creator never triggers publish directly.
     "analytics.view",
@@ -122,6 +134,11 @@ const CAPABILITIES: Record<EffectiveRole, ReadonlySet<Action>> = {
     "content.generate",
     "content.edit_draft",
     "content.regenerate",
+    // The lead prompts the engine as a creator does, and dispatches what comes
+    // out of it. Still no `content.attach_reference` -- attaching reference
+    // material stays the creator's alone, as it was before Phase 14.
+    "content.chat",
+    "task.assign",
     // Acts as internal reviewer in place of the account manager where assigned,
     // with the same late-revoke power.
     "approval.internal",
@@ -142,6 +159,9 @@ const CAPABILITIES: Record<EffectiveRole, ReadonlySet<Action>> = {
   ]),
 
   agency_admin: new Set<Action>([
+    // Shared with the account manager since Phase 14, not exclusive. The admin
+    // keeps it so oversight can correct a staffing mistake on a client whose
+    // account manager is the one who made it.
     "client.assign_roles",
     "campaign.view",
     "analytics.view",
@@ -167,6 +187,8 @@ const CLIENT_SCOPED_ACTIONS = new Set<Action>([
   "content.edit_draft",
   "content.attach_reference",
   "content.regenerate",
+  "content.chat",
+  "task.assign",
   "approval.internal",
   "approval.client",
   "approval.revoke",

@@ -110,14 +110,20 @@ describe("the capability matrix, per docs/architecture.md §9", () => {
       "post_request.convert", "approval.internal", "approval.revoke",
       "publish.schedule", "platform.connect", "platform.view_credentials",
       "brand_guide.upload",
+      // Phase 14: the owner of the relationship staffs it.
+      "client.assign_roles",
     ],
     content_creator: [
       "content.generate", "content.edit_draft", "content.attach_reference",
       "content.regenerate", "campaign.view",
+      // Phase 14: content originates in conversation.
+      "content.chat",
     ],
     content_lead: [
       "approval.internal", "approval.revoke", "publish.schedule",
       "content.regenerate", "campaign.view",
+      // Phase 14: the lead prompts the engine and dispatches the result.
+      "content.chat", "task.assign",
     ],
     client_contact: [
       "post_request.create", "approval.client", "approval.revoke",
@@ -130,12 +136,14 @@ describe("the capability matrix, per docs/architecture.md §9", () => {
 
   const DENIALS: Record<EffectiveRole, Action[]> = {
     // The account manager is not the client, and does not give client approval.
-    account_manager: ["approval.client", "client.assign_roles", "audit.view", "publish.now"],
+    account_manager: ["approval.client", "audit.view", "publish.now"],
     // Staging only: a creator never schedules, publishes, approves, or connects
     // a platform account.
     content_creator: [
       "publish.schedule", "publish.now", "approval.internal", "approval.client",
       "platform.connect", "client.create", "client.assign_roles",
+      // A creator works the items they hold; dispatching them is the lead's.
+      "task.assign",
     ],
     // A lead reviews; they do not attach references or hold client approval.
     content_lead: ["approval.client", "content.attach_reference", "client.assign_roles"],
@@ -144,6 +152,9 @@ describe("the capability matrix, per docs/architecture.md §9", () => {
       "content.generate", "content.edit_draft", "content.attach_reference",
       "approval.internal", "publish.schedule", "platform.connect",
       "platform.view_credentials", "campaign.submit", "audit.view",
+      // The engine is a staff surface. A client asks for a post; they do not
+      // prompt for one.
+      "content.chat", "task.assign",
     ],
     // The accountability role is "not involved in day-to-day content work" --
     // giving it drafting or approval powers would make it a participant in what
@@ -151,6 +162,9 @@ describe("the capability matrix, per docs/architecture.md §9", () => {
     agency_admin: [
       "content.generate", "content.edit_draft", "approval.internal",
       "approval.client", "publish.schedule", "campaign.submit", "client.create",
+      // Phase 14 changes nothing here: the accountability role still does no
+      // content work, so it neither chats nor dispatches.
+      "content.chat", "task.assign",
     ],
   };
 

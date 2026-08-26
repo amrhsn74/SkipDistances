@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { SESSION_COOKIE } from "@/config/session";
+import { SESSION_COOKIE, STALE_SESSION_MARKER } from "@/config/session";
 
 /**
  * The first gate every browser request passes.
@@ -38,12 +38,30 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSession = Boolean(request.cookies.get(SESSION_COOKIE)?.value);
 
-  // A signed-in visitor has no business on the sign-in screen. Sent to `/`,
-  // which resolves their role and forwards -- middleware cannot know the role
-  // itself, having no database.
+  // The sign-in screen.
+  //
+  // A cookie-holding visitor is normally sent to `/`, which resolves their role
+  // and forwards -- this runtime cannot know the role itself, having no
+  // database. But that redirect is exactly half of a loop the visitor cannot
+  // escape by reloading, because this runtime also cannot know whether the
+  // cookie still *resolves*: a browser holding an expired, revoked, or deleted
+  // session is sent to `/`, found to be nobody, redirected back here, and
+  // bounced to `/` again, forever.
+  //
+  // `/` marks that trip with `?stale`. Seeing it means the round trip has
+  // already happened once and came back with no user, so the cookie is dead: it
+  // is cleared, the page is served, and the next request is honestly signed-out.
+  // Without the marker the redirect stands, so a genuinely signed-in visitor who
+  // types `/signin` still lands on their own home rather than being logged out
+  // for visiting a URL.
   if (PUBLIC_PATHS.has(pathname)) {
-    if (hasSession) return NextResponse.redirect(new URL("/", request.url));
-    return NextResponse.next();
+    if (hasSession && !request.nextUrl.searchParams.has(STALE_SESSION_MARKER)) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+
+    const response = NextResponse.next();
+    if (hasSession) clearSessionCookie(response);
+    return response;
   }
 
   if (!hasSession) {
@@ -81,3 +99,25 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico|brand|uploads).*)"],
 };
+
+/**
+ * Expire the session cookie on a response.
+ *
+ * Here rather than in a page because Next forbids mutating cookies while
+ * rendering -- `cookies().delete()` in a Server Component throws rather than
+ * clearing anything. Middleware returns a real response, so it is the one place
+ * in the request path that can actually say `Set-Cookie`.
+ *
+ * The attributes must match the ones sign-in wrote, or the browser keeps the
+ * original cookie alongside the expired one and nothing changes.
+ */
+function clearSessionCookie(response: NextResponse): void {
+  response.cookies.set({
+    name: SESSION_COOKIE,
+    value: "",
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
+}

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { NextRequest } from "next/server";
 
 import { SESSION_COOKIE } from "@/api/request";
+import { STALE_SESSION_MARKER } from "@/config/session";
 import { config, middleware } from "@/middleware";
 
 /**
@@ -104,5 +105,54 @@ describe("a visitor holding a session cookie", () => {
     expect(redirectTo(middleware(request("/AccountManager", "")))).toBe(
       "/signin?next=%2FAccountManager",
     );
+  });
+});
+
+/**
+ * The redirect loop, and the handshake that ends it.
+ *
+ * This runtime can see that a session cookie is *present* and never whether it
+ * still resolves -- it has no database. So a browser holding an expired,
+ * revoked, or deleted session used to be sent to `/`, found to be nobody there,
+ * redirected back to `/signin`, and bounced to `/` again: a loop no reload could
+ * escape, ending in the browser's own "redirected you too many times".
+ *
+ * The way out is that `/` and `requireRole` know something this does not, and
+ * say so on the redirect. These are the tests that keep the handshake honest --
+ * the bug is invisible until someone's cookie goes stale, which is exactly when
+ * nobody is looking.
+ */
+describe("a stale session cookie", () => {
+  it("serves the sign-in page rather than bouncing it back to the root", () => {
+    const response = middleware(request(`/signin?${STALE_SESSION_MARKER}`, "dead-token"));
+
+    // The half of the loop this runtime owns. Redirecting here is what made it
+    // a cycle rather than a single wasted round trip.
+    expect(redirectTo(response)).toBeNull();
+  });
+
+  it("expires the cookie, so the next request is honestly signed out", () => {
+    const response = middleware(request(`/signin?${STALE_SESSION_MARKER}`, "dead-token"));
+
+    const setCookie = response.headers.get("set-cookie") ?? "";
+    expect(setCookie).toContain(SESSION_COOKIE);
+    // Max-Age=0 is the expiry. Without it the browser keeps presenting the dead
+    // token and the loop resumes on the next navigation.
+    expect(setCookie).toContain("Max-Age=0");
+  });
+
+  it("still redirects a cookie-holder who simply typed /signin", () => {
+    const response = middleware(request("/signin", "live-token"));
+
+    // No marker means no round trip has failed yet, so the cookie is presumed
+    // good. Clearing it here would silently sign out anyone who visited the URL.
+    expect(redirectTo(response)).toBe("/");
+  });
+
+  it("leaves a signed-out visitor's cookie alone", () => {
+    const response = middleware(request("/signin"));
+
+    expect(redirectTo(response)).toBeNull();
+    expect(response.headers.get("set-cookie")).toBeNull();
   });
 });

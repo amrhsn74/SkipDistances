@@ -1,6 +1,8 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { currentUser } from "@/api/request";
+import { SESSION_COOKIE, STALE_SESSION_MARKER } from "@/config/session";
 import { effectiveRole, type EffectiveRole } from "@/domain/accessScope";
 import { ROLE_HOME } from "@/domain/roleRoutes";
 
@@ -27,7 +29,15 @@ export async function requireRole(
   // No session, or a session whose user must still set a password. Both are the
   // middleware's job on a normal request; repeated here because a layout must
   // never render on the assumption that middleware ran.
-  if (!user) redirect("/signin");
+  if (!user) {
+    // Same handshake as `app/page.tsx`. A cookie that reached here and resolved
+    // to nobody is dead, and saying so on the redirect is what lets the
+    // middleware clear it -- without the flag it would bounce this visitor to
+    // `/` and back here forever, since the edge can only see that a cookie
+    // exists.
+    const stale = Boolean(cookies().get(SESSION_COOKIE)?.value);
+    redirect(stale ? `/signin?${STALE_SESSION_MARKER}` : "/signin");
+  }
   if (user.must_change_password) redirect("/password");
 
   const role = await effectiveRole(user);

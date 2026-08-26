@@ -1,5 +1,6 @@
 import { currentUser } from "@/api/request";
 import { visibleClients } from "@/domain/accessScope";
+import { parsePage, toPage, toSkipTake } from "@/domain/pagination";
 import { operationalSummary } from "@/domain/summary";
 
 import { Card, EmptyState, PageHeader } from "../components/Page";
@@ -16,16 +17,47 @@ import { SummaryPanel } from "./SummaryPanel";
  *
  * Scope comes from `visibleClients`, the same call the API route makes, so the
  * page and the endpoint cannot disagree about which clients this is a summary of.
+ *
+ * The by-client table is paged, because a content lead or admin sees all 150
+ * rows of it and an account manager can hold plenty. The paging is applied to
+ * the **rows only** -- every headline number above the table is still computed
+ * across the whole scope. A "flagged: 3" that silently meant "3 on this page"
+ * would be the panel actively lying about what needs a human, which is the one
+ * thing this screen exists to be right about.
  */
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Overview · Skip Studio" };
 
-export default async function AccountManagerHome() {
+export default async function AccountManagerHome({
+  searchParams,
+}: {
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
   // The layout has already guaranteed a signed-in account manager.
   const user = (await currentUser())!;
 
   const scope = await visibleClients(user);
   const summary = await operationalSummary(scope.all ? "all" : scope.clientIds);
+
+  const read = (key: string) => {
+    const value = searchParams[key];
+    return typeof value === "string" ? value : null;
+  };
+
+  // A smaller default than a full list screen: this table shares the page with
+  // the stat row and the occasions panel, and a reader here is scanning for one
+  // client rather than working through every row.
+  const page = parsePage(read("page"), read("size"), 10);
+  const { skip, take } = toSkipTake(page);
+
+  // Sliced in memory rather than in the query, because `operationalSummary`
+  // computes the totals from the same set -- paging at the database would make
+  // the headline numbers describe one page instead of the whole scope.
+  const clientPage = toPage(
+    summary.clients.slice(skip, skip + take),
+    summary.clients.length,
+    page,
+  );
 
   return (
     <>
@@ -43,7 +75,7 @@ export default async function AccountManagerHome() {
       ) : (
         <SummaryPanel
           totals={summary.totals}
-          clients={summary.clients}
+          clients={clientPage}
           occasions={summary.upcoming_occasions.map((occasion) => ({
             key: occasion.key,
             name: occasion.name,

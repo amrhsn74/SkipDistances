@@ -63,6 +63,7 @@ const ALREADY_APPROVED: readonly ContentStatus[] = [
 /** One message on an item's thread. */
 export type ItemComment = {
   comment_id: string;
+  author_id: string | null;
   author_name: string | null;
   body: string;
   created_at: Date;
@@ -414,6 +415,7 @@ async function commentsFor(
     select: {
       comment_id: true,
       content_item_id: true,
+      author_id: true,
       body: true,
       created_at: true,
       author: { select: { name: true } },
@@ -424,6 +426,7 @@ async function commentsFor(
     const list = byItem.get(row.content_item_id!) ?? [];
     list.push({
       comment_id: row.comment_id,
+      author_id: row.author_id,
       author_name: row.author?.name ?? null,
       body: row.body,
       created_at: row.created_at,
@@ -472,6 +475,7 @@ export function serializeReviewItem(item: ReviewItem) {
     comment_count: item.comment_count,
     comments: item.comments.map((c) => ({
       comment_id: c.comment_id,
+      author_id: c.author_id,
       author_name: c.author_name,
       body: c.body,
       created_at: c.created_at.toISOString(),
@@ -491,6 +495,9 @@ function serializeDecision(decision: NamedDecision | null) {
     decision: decision.decision,
     comment: decision.comment,
     decided_at: decision.decided_at.toISOString(),
+    // Carried alongside the name so the screen can show a face. The gate has no
+    // use for either -- this is the review layer adding what a human needs.
+    decided_by_id: decision.decided_by_id,
     decided_by_name: decision.decided_by_name,
   };
 }

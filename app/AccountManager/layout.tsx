@@ -18,7 +18,7 @@ export default async function AccountManagerLayout({
   const { user, role } = await requireRole("account_manager");
 
   return (
-    <AppShell role={role} userName={user.name}>
+    <AppShell role={role} userId={user.user_id} userName={user.name}>
       {children}
     </AppShell>
   );

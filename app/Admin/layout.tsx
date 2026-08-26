@@ -18,7 +18,7 @@ export default async function AdminLayout({
   const { user, role } = await requireRole("agency_admin");
 
   return (
-    <AppShell role={role} userName={user.name}>
+    <AppShell role={role} userId={user.user_id} userName={user.name}>
       {children}
     </AppShell>
   );

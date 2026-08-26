@@ -34,6 +34,7 @@ export type HistoryReference = {
   /** A browser-reachable path under `/uploads/references`, not the disk path. */
   public_url: string;
   instruction: string | null;
+  uploaded_by_id: string | null;
   uploaded_by_name: string | null;
   created_at: Date;
 };
@@ -41,6 +42,7 @@ export type HistoryReference = {
 export type HistoryRun = {
   audit_id: string;
   performed_at: Date;
+  performed_by_id: string | null;
   performed_by_name: string | null;
   from_status: string | null;
   to_status: string | null;
@@ -85,6 +87,7 @@ export async function regenerationHistory(
         storage_url: true,
         instruction: true,
         created_at: true,
+        uploaded_by_id: true,
         uploaded_by: { select: { name: true } },
       },
     }),
@@ -95,6 +98,7 @@ export async function regenerationHistory(
         audit_id: true,
         details: true,
         performed_at: true,
+        performed_by_id: true,
         performed_by: { select: { name: true } },
       },
     }),
@@ -108,6 +112,7 @@ export async function regenerationHistory(
         file_type: a.file_type,
         public_url: publicUrlFor(a.storage_url),
         instruction: a.instruction,
+        uploaded_by_id: a.uploaded_by_id,
         uploaded_by_name: a.uploaded_by?.name ?? null,
         created_at: a.created_at,
       } satisfies HistoryReference,
@@ -135,6 +140,7 @@ export async function regenerationHistory(
     runs.push({
       audit_id: row.audit_id,
       performed_at: row.performed_at,
+      performed_by_id: row.performed_by_id,
       performed_by_name: row.performed_by?.name ?? null,
       from_status: asStringOrNull(details.from_status),
       to_status: asStringOrNull(details.to_status),
@@ -194,6 +200,7 @@ export function serializeHistory(history: RegenerationHistory) {
     file_type: r.file_type,
     public_url: r.public_url,
     instruction: r.instruction,
+    uploaded_by_id: r.uploaded_by_id,
     uploaded_by_name: r.uploaded_by_name,
     created_at: r.created_at.toISOString(),
   });
@@ -202,6 +209,7 @@ export function serializeHistory(history: RegenerationHistory) {
     runs: history.runs.map((run) => ({
       audit_id: run.audit_id,
       performed_at: run.performed_at.toISOString(),
+      performed_by_id: run.performed_by_id,
       performed_by_name: run.performed_by_name,
       from_status: run.from_status,
       to_status: run.to_status,

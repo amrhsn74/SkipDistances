@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { Avatar, AvatarName } from "../../components/Avatar";
 import { Badge, type BadgeTone } from "../../components/Page";
 import type { IncomingRequestSerialized } from "@/domain/clientCalendar";
 
@@ -90,14 +91,24 @@ export function IncomingRequestCard({ request }: { request: IncomingRequestSeria
   return (
     <article className="rounded-2xl border border-edge bg-surface p-5 shadow-sm">
       <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="font-heading text-base font-semibold text-heading">
-            {request.client_name}
-          </h3>
-          <p className="mt-0.5 text-sm text-body">
-            Asking for {readable}
-            {request.requested_by_name ? ` · raised by ${request.requested_by_name}` : ""}
-          </p>
+        <div className="flex min-w-0 items-start gap-3">
+          <Avatar
+            userId={request.requested_by_id}
+            name={request.requested_by_name}
+            // Only a client contact may raise a request, so the role is known
+            // here without a lookup.
+            role="client_contact"
+            size="lg"
+          />
+          <div className="min-w-0">
+            <h3 className="font-heading text-base font-semibold text-heading">
+              {request.client_name}
+            </h3>
+            <p className="mt-0.5 text-sm text-body">
+              Asking for {readable}
+              {request.requested_by_name ? ` · raised by ${request.requested_by_name}` : ""}
+            </p>
+          </div>
         </div>
         <Badge tone={status.tone}>{status.label}</Badge>
       </header>
@@ -106,9 +117,9 @@ export function IncomingRequestCard({ request }: { request: IncomingRequestSeria
         <ul className="mt-3 space-y-2">
           {request.comments.map((comment) => (
             <li key={comment.comment_id} className="rounded-xl bg-canvas px-4 py-3">
-              <p className="text-xs text-body/70">
-                {comment.author_name ?? "Someone"} ·{" "}
-                {new Date(comment.created_at).toLocaleString()}
+              <p className="flex flex-wrap items-center gap-1.5 text-xs text-body/70">
+                <AvatarName userId={comment.author_id} name={comment.author_name} />
+                · {new Date(comment.created_at).toLocaleString()}
               </p>
               <p className="mt-1 whitespace-pre-wrap text-sm text-heading">{comment.body}</p>
             </li>

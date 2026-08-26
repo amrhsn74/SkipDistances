@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import type { EffectiveRole } from "@/domain/accessScope";
 import { ROLE_HOME, ROLE_LABEL, ROLE_NAV } from "@/domain/roleRoutes";
 
+import { Avatar } from "./Avatar";
 import { NavIcon } from "./NavIcon";
 import { SignOutButton } from "./SignOutButton";
 
@@ -23,7 +24,15 @@ import { SignOutButton } from "./SignOutButton";
  * middleware admits. Hiding a link is presentation, never protection: every page
  * behind these still enforces for itself.
  */
-export function Sidebar({ role, userName }: { role: EffectiveRole; userName: string }) {
+export function Sidebar({
+  role,
+  userId,
+  userName,
+}: {
+  role: EffectiveRole;
+  userId: string;
+  userName: string;
+}) {
   const pathname = usePathname();
 
   return (
@@ -74,10 +83,13 @@ export function Sidebar({ role, userName }: { role: EffectiveRole; userName: str
       </nav>
 
       <div className="border-t border-white/10 p-4">
-        <p className="mb-3 px-2">
-          <span className="block truncate text-sm font-semibold text-white">{userName}</span>
-          <span className="block text-xs text-amber-brand">{ROLE_LABEL[role]}</span>
-        </p>
+        <div className="mb-3 flex items-center gap-2.5 px-2">
+          <Avatar userId={userId} name={userName} role={role} size="lg" />
+          <p className="min-w-0">
+            <span className="block truncate text-sm font-semibold text-white">{userName}</span>
+            <span className="block text-xs text-amber-brand">{ROLE_LABEL[role]}</span>
+          </p>
+        </div>
         <SignOutButton />
       </div>
     </aside>

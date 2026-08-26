@@ -18,7 +18,7 @@ export default async function ClientLayout({
   const { user, role } = await requireRole("client_contact");
 
   return (
-    <AppShell role={role} userName={user.name}>
+    <AppShell role={role} userId={user.user_id} userName={user.name}>
       {children}
     </AppShell>
   );

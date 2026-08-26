@@ -5,6 +5,7 @@ import { visibleClientIds } from "@/domain/accessScope";
 import { listClients } from "@/domain/clientRoster";
 import { operationalSummary } from "@/domain/summary";
 
+import { Avatar } from "../components/Avatar";
 import { Badge, Card, EmptyState, PageHeader } from "../components/Page";
 
 /**
@@ -66,17 +67,28 @@ export default async function Page() {
         <Card title="Your account manager">
           {client.account_manager_name ? (
             <div>
-              <p className="font-heading text-lg font-semibold text-heading">
-                {client.account_manager_name}
-              </p>
-              {client.account_manager_email ? (
-                <a
-                  href={`mailto:${client.account_manager_email}`}
-                  className="text-sm text-body underline underline-offset-4 transition-colors hover:text-heading"
-                >
-                  {client.account_manager_email}
-                </a>
-              ) : null}
+              <div className="flex items-center gap-4">
+                <Avatar
+                  userId={client.account_manager_id}
+                  name={client.account_manager_name}
+                  role="account_manager"
+                  size="lg"
+                  className="h-14 w-14"
+                />
+                <div className="min-w-0">
+                  <p className="font-heading text-lg font-semibold text-heading">
+                    {client.account_manager_name}
+                  </p>
+                  {client.account_manager_email ? (
+                    <a
+                      href={`mailto:${client.account_manager_email}`}
+                      className="text-sm text-body underline underline-offset-4 transition-colors hover:text-heading"
+                    >
+                      {client.account_manager_email}
+                    </a>
+                  ) : null}
+                </div>
+              </div>
               <p className="mt-3 text-sm text-body">
                 They submit your briefs, review drafts before they reach you, and
                 convert anything you request on the calendar into real work.

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { AvatarName } from "../../components/Avatar";
 import { Badge, EmptyState, type BadgeTone } from "../../components/Page";
 import type { ClientCalendarSerialized } from "@/domain/clientCalendar";
 
@@ -121,9 +122,9 @@ function RequestRowItem({ request }: { request: RequestRow }) {
         <ul className="mt-3 space-y-2">
           {request.comments.map((comment) => (
             <li key={comment.comment_id} className="rounded-xl bg-canvas px-4 py-3">
-              <p className="text-xs text-body/70">
-                {comment.author_name ?? "Someone"} ·{" "}
-                {new Date(comment.created_at).toLocaleString()}
+              <p className="flex flex-wrap items-center gap-1.5 text-xs text-body/70">
+                <AvatarName userId={comment.author_id} name={comment.author_name} />
+                · {new Date(comment.created_at).toLocaleString()}
               </p>
               <p className="mt-1 whitespace-pre-wrap text-sm text-heading">{comment.body}</p>
             </li>

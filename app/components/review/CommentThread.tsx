@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { AvatarName } from "../Avatar";
+
 /**
  * The discussion thread on one content item.
  *
@@ -24,6 +26,7 @@ import { useState } from "react";
 
 export type CommentView = {
   comment_id: string;
+  author_id: string | null;
   author_name: string | null;
   body: string;
   created_at: string;
@@ -94,9 +97,9 @@ export function CommentThread({
             <ul className="space-y-2">
               {comments.map((comment) => (
                 <li key={comment.comment_id} className="rounded-xl bg-canvas px-4 py-3">
-                  <p className="text-xs text-body/70">
-                    {comment.author_name ?? "Someone"} ·{" "}
-                    {new Date(comment.created_at).toLocaleString()}
+                  <p className="flex flex-wrap items-center gap-1.5 text-xs text-body/70">
+                    <AvatarName userId={comment.author_id} name={comment.author_name} />
+                    · {new Date(comment.created_at).toLocaleString()}
                   </p>
                   <p className="mt-1 whitespace-pre-wrap text-sm text-heading">{comment.body}</p>
                 </li>

@@ -1,8 +1,10 @@
 import Link from "next/link";
 
+import type { Page } from "@/domain/pagination";
 import type { ClientSummary, OperationalSummary } from "@/domain/summary";
 
 import { Badge, Card, EmptyState } from "../components/Page";
+import { Pagination } from "../components/Pagination";
 
 type OccasionRow = { key: string; name: string; category: string; date: string | undefined };
 
@@ -16,6 +18,10 @@ type OccasionRow = { key: string; name: string; category: string; date: string |
  * The four `awaiting` numbers lead, and the by-status breakdown follows. That
  * ordering is the panel's whole argument: the PRD has no reminders, so a number
  * nobody looks at is work nobody does.
+ *
+ * `clients` arrives as a page, `totals` does not. The stat row above the table
+ * counts every client in scope while the table shows ten of them -- and the
+ * table says so, rather than leaving a reader to assume the two agree.
  */
 export function SummaryPanel({
   totals,
@@ -24,7 +30,8 @@ export function SummaryPanel({
   window: dateWindow,
 }: {
   totals: OperationalSummary["totals"];
-  clients: ClientSummary[];
+  /** A page of rows. The totals above are still scope-wide -- see the note. */
+  clients: Page<ClientSummary>;
   occasions: OccasionRow[];
   window: OperationalSummary["window"];
 }) {
@@ -47,8 +54,8 @@ export function SummaryPanel({
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <Card title="By client">
-            {clients.length === 0 ? (
+          <Card title={`By client · ${clients.total}`}>
+            {clients.rows.length === 0 ? (
               <EmptyState>No clients in scope.</EmptyState>
             ) : (
               <div className="overflow-x-auto">
@@ -64,7 +71,7 @@ export function SummaryPanel({
                     </tr>
                   </thead>
                   <tbody>
-                    {clients.map((client) => (
+                    {clients.rows.map((client) => (
                       <tr
                         key={client.client_id}
                         className="border-b border-edge/60 last:border-0"
@@ -95,6 +102,13 @@ export function SummaryPanel({
                 </table>
               </div>
             )}
+
+            {/*
+              Rendered whenever there is more than one page. Below the table
+              rather than above it, so the numbers a reader came for are the
+              first thing under the heading.
+            */}
+            {clients.totalPages > 1 ? <Pagination page={clients} /> : null}
           </Card>
         </div>
 

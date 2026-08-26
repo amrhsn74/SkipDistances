@@ -1,5 +1,6 @@
 "use client";
 
+import { AvatarName } from "../Avatar";
 import { Badge, type BadgeTone } from "../Page";
 
 /**
@@ -35,7 +36,13 @@ export type ReviewItemView = {
   created_at: string;
   citations: { clause_id: string; clause_code: string; title: string; source_type: string }[];
   comment_count: number;
-  comments: { comment_id: string; author_name: string | null; body: string; created_at: string }[];
+  comments: {
+    comment_id: string;
+    author_id: string | null;
+    author_name: string | null;
+    body: string;
+    created_at: string;
+  }[];
   decisions: {
     internal: DecisionView | null;
     client: DecisionView | null;
@@ -48,6 +55,7 @@ export type DecisionView = {
   decision: string;
   comment: string | null;
   decided_at: string;
+  decided_by_id: string | null;
   decided_by_name: string | null;
 };
 
@@ -167,11 +175,13 @@ export function ReviewItemCard({
         <DecisionLine
           label={stage === "internal" ? "Internal" : "Client"}
           decision={mine}
+          stage={stage}
           emphasis
         />
         <DecisionLine
           label={stage === "internal" ? "Client" : "Internal"}
           decision={other}
+          stage={stage === "internal" ? "client" : "internal"}
         />
       </dl>
 
@@ -232,10 +242,13 @@ function Citations({ citations }: { citations: ReviewItemView["citations"] }) {
 function DecisionLine({
   label,
   decision,
+  stage,
   emphasis = false,
 }: {
   label: string;
   decision: DecisionView | null;
+  /** Which stage this line reports, which is what implies the decider's role. */
+  stage: "internal" | "client";
   emphasis?: boolean;
 }) {
   return (
@@ -258,8 +271,18 @@ function DecisionLine({
               {decision.decision === "approve" ? "Approved" : "Declined"}
             </span>{" "}
             <span className="text-body">
-              by {decision.decided_by_name ?? "someone"} ·{" "}
-              {new Date(decision.decided_at).toLocaleDateString()}
+              by{" "}
+              <AvatarName
+                userId={decision.decided_by_id}
+                name={decision.decided_by_name}
+                // The client stage is only ever a client contact. The internal
+                // stage is an account manager or a content lead, which this
+                // cannot tell apart without a query -- so it is left unset and
+                // the face falls back to a stable pick.
+                role={stage === "client" ? "client_contact" : undefined}
+                fallback="someone"
+              />{" "}
+              · {new Date(decision.decided_at).toLocaleDateString()}
             </span>
             {decision.comment ? (
               <span className="mt-1 block text-body">“{decision.comment}”</span>

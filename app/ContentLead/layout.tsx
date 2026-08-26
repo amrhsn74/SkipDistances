@@ -18,7 +18,7 @@ export default async function ContentLeadLayout({
   const { user, role } = await requireRole("content_lead");
 
   return (
-    <AppShell role={role} userName={user.name}>
+    <AppShell role={role} userId={user.user_id} userName={user.name}>
       {children}
     </AppShell>
   );

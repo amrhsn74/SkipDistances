@@ -40,6 +40,7 @@ export type CalendarRequestRow = {
   /** The thread on this request, oldest first. */
   comments: {
     comment_id: string;
+    author_id: string | null;
     author_name: string | null;
     body: string;
     created_at: Date;
@@ -106,6 +107,7 @@ export async function clientCalendar(
           orderBy: { created_at: "asc" },
           select: {
             comment_id: true,
+            author_id: true,
             body: true,
             created_at: true,
             author: { select: { name: true } },
@@ -133,6 +135,7 @@ export async function clientCalendar(
       linked_campaign_id: request.linked_campaign_id,
       comments: request.comments.map((comment) => ({
         comment_id: comment.comment_id,
+        author_id: comment.author_id,
         author_name: comment.author?.name ?? null,
         body: comment.body,
         created_at: comment.created_at,
@@ -162,6 +165,7 @@ export function serializeClientCalendar(calendar: ClientCalendar) {
       client_editable: request.client_editable,
       comments: request.comments.map((comment) => ({
         comment_id: comment.comment_id,
+        author_id: comment.author_id,
         author_name: comment.author_name,
         body: comment.body,
         created_at: comment.created_at.toISOString(),
@@ -188,6 +192,7 @@ export type ClientCalendarSerialized = ReturnType<typeof serializeClientCalendar
 export type IncomingRequest = CalendarRequestRow & {
   client_id: string;
   client_name: string;
+  requested_by_id: string | null;
   requested_by_name: string | null;
   created_at: Date;
 };
@@ -221,11 +226,12 @@ export async function incomingRequests(
       linked_campaign_id: true,
       created_at: true,
       client: { select: { name: true } },
-      requested_by: { select: { name: true } },
+      requested_by: { select: { user_id: true, name: true } },
       comments: {
         orderBy: { created_at: "asc" },
         select: {
           comment_id: true,
+          author_id: true,
           body: true,
           created_at: true,
           author: { select: { name: true } },
@@ -238,6 +244,7 @@ export async function incomingRequests(
     post_request_id: row.post_request_id,
     client_id: row.client_id,
     client_name: row.client.name,
+    requested_by_id: row.requested_by?.user_id ?? null,
     requested_by_name: row.requested_by?.name ?? null,
     requested_date: row.requested_date,
     status: row.status,
@@ -246,6 +253,7 @@ export async function incomingRequests(
     created_at: row.created_at,
     comments: row.comments.map((comment) => ({
       comment_id: comment.comment_id,
+      author_id: comment.author_id,
       author_name: comment.author?.name ?? null,
       body: comment.body,
       created_at: comment.created_at,
@@ -260,6 +268,7 @@ export function serializeIncomingRequest(request: IncomingRequest) {
     post_request_id: request.post_request_id,
     client_id: request.client_id,
     client_name: request.client_name,
+    requested_by_id: request.requested_by_id,
     requested_by_name: request.requested_by_name,
     requested_date: request.requested_date.toISOString(),
     status: request.status,
@@ -269,6 +278,7 @@ export function serializeIncomingRequest(request: IncomingRequest) {
     client_editable: request.client_editable,
     comments: request.comments.map((comment) => ({
       comment_id: comment.comment_id,
+      author_id: comment.author_id,
       author_name: comment.author_name,
       body: comment.body,
       created_at: comment.created_at.toISOString(),

@@ -83,6 +83,15 @@ export async function chatThread(user: ActingUser, conversationId: string) {
             content_body: true,
             status: true,
             citations: { select: { clause_id: true } },
+            media: {
+              orderBy: { created_at: "asc" },
+              select: {
+                media_asset_id: true,
+                asset_type: true,
+                storage_url: true,
+                generation_source: true,
+              },
+            },
           },
         })
       : Promise.resolve([]),
@@ -105,6 +114,12 @@ export async function chatThread(user: ActingUser, conversationId: string) {
       content_body: item.content_body,
       status: item.status,
       citations: item.citations.map((citation) => citation.clause_id),
+      media: item.media.map((asset) => ({
+        media_asset_id: asset.media_asset_id,
+        asset_type: asset.asset_type,
+        storage_url: asset.storage_url,
+        generation_source: asset.generation_source,
+      })),
     })),
   };
 }

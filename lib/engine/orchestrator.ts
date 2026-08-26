@@ -20,6 +20,12 @@ import {
 import { generatePlan, type GeneratedPlan, type StructuredGenerator } from "./generatePlan";
 import { planningWindow, resolveCalendar, type CampaignCalendar } from "./resolveCalendar";
 import { queueOrFlag, type QueueOrFlagResult } from "./queueOrFlag";
+import {
+  generateMedia,
+  type GenerateMediaResult,
+  type ImageGenerator,
+} from "./generateMedia";
+import { generateImage } from "../llm/gemini";
 import { searchGuidelines, type GuidelineBundle } from "./searchGuidelines";
 
 /**
@@ -120,12 +126,22 @@ export type IntakeDependencies = {
   analyze: (briefText: string) => Promise<BriefAnalysis>;
   generate: typeof generatePlan;
   judge: ComplianceJudge;
+  /**
+   * Optional, and its absence is meaningful: omit it and no image is generated
+   * and no call is spent. Every text guarantee holds either way, which is what
+   * lets the whole test suite keep running without an image model.
+   */
+  generateImage?: ImageGenerator;
 };
 
 const defaultDependencies: IntakeDependencies = {
   analyze: analyzeBrief,
   generate: generatePlan,
   judge: judgeWithGemini,
+  // On for the real app, because an `image` item with no image is the bug this
+  // exists to fix. Tests construct their own dependencies and get no generator
+  // unless they ask for one, so the suite stays offline by construction.
+  generateImage,
 };
 
 export type IntakeRunResult = {
@@ -137,6 +153,8 @@ export type IntakeRunResult = {
   plan: GeneratedPlan | null;
   compliance: ItemComplianceResult[] | null;
   queued: QueueOrFlagResult | null;
+  /** Null when nothing visual was drafted, or when no generator was supplied. */
+  media: GenerateMediaResult | null;
 };
 
 /**
@@ -253,6 +271,7 @@ export async function runIntake(
       plan: null,
       compliance: null,
       queued: null,
+      media: null,
     };
   }
 
@@ -285,7 +304,31 @@ export async function runIntake(
     db,
   );
 
-  return { campaignId, analysis, intake, calendar, guidelines, plan, compliance, queued };
+  // Last, and only over what survived compliance as a draft. A campaign whose
+  // images fail is still a campaign: `generateMedia` reports per item and throws
+  // nothing, so nothing below this line can lose the work above it.
+  const media = dependencies.generateImage
+    ? await generateMedia(
+        {
+          client: { name: intake.client.name, industry: intake.client.industry },
+          drafted: queued.drafted,
+        },
+        db,
+        dependencies.generateImage,
+      )
+    : null;
+
+  return {
+    campaignId,
+    analysis,
+    intake,
+    calendar,
+    guidelines,
+    plan,
+    compliance,
+    queued,
+    media,
+  };
 }
 
 /**

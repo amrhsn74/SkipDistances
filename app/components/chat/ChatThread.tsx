@@ -42,6 +42,13 @@ export type Turn = {
   created_at: string;
 };
 
+export type ProducedMedia = {
+  media_asset_id: string;
+  asset_type: string;
+  storage_url: string;
+  generation_source: string;
+};
+
 export type ProducedItem = {
   content_item_id: string;
   content_form: string;
@@ -49,6 +56,7 @@ export type ProducedItem = {
   content_body: string | null;
   status: string;
   citations: string[];
+  media: ProducedMedia[];
 };
 
 export function ChatThread({
@@ -250,6 +258,43 @@ function TurnBubble({ turn }: { turn: Turn }) {
   );
 }
 
+/** Forms whose content is the picture, not the paragraph. See `mediaAssets.ts`. */
+const VISUAL_FORMS = ["image", "video", "reel", "photoshoot"];
+
+/**
+ * The item's first image, or an honest placeholder.
+ *
+ * A visual item with no media is shown as *pending*, not hidden. Image
+ * generation is allowed to fail without failing the campaign, so "no picture
+ * yet" is a real state the creator can be in -- and silently rendering nothing
+ * would make a failed generation look identical to one that was never asked for.
+ */
+function ItemThumbnail({ item }: { item: ProducedItem }) {
+  const image = item.media.find((asset) => asset.asset_type === "image");
+
+  if (image) {
+    return (
+      // A plain <img>: these are runtime-written files under /public/uploads
+      // with no known dimensions, which is exactly the case next/image's
+      // optimiser is unhelpful for.
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={image.storage_url}
+        alt={`Generated visual for ${item.content_form}`}
+        className="h-16 w-16 shrink-0 rounded-lg border border-edge object-cover"
+      />
+    );
+  }
+
+  if (!VISUAL_FORMS.includes(item.content_form)) return null;
+
+  return (
+    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-dashed border-edge text-center text-[10px] leading-tight text-body">
+      No image
+    </div>
+  );
+}
+
 function ProducedItems({ items }: { items: ProducedItem[] }) {
   return (
     <div className="rounded-2xl border border-edge bg-surface p-4">
@@ -273,7 +318,8 @@ function ProducedItems({ items }: { items: ProducedItem[] }) {
             key={item.content_item_id}
             className="flex items-start justify-between gap-4 rounded-xl border border-edge px-4 py-3"
           >
-            <div className="min-w-0">
+            <ItemThumbnail item={item} />
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-heading">
                 {item.content_form}
                 {item.platform ? ` · ${item.platform}` : ""}

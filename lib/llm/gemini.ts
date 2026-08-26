@@ -197,3 +197,144 @@ export async function generateFromImage<T>(
 export function isConfigured(): boolean {
   return Boolean(process.env.GEMINI_API_KEY);
 }
+
+// --- Image generation -----------------------------------------------------
+//
+// A second output modality, and deliberately a separate function rather than a
+// flag on `generateStructured`. The two share nothing but the client: a
+// different model, a different response shape, different failure modes, and a
+// different cost per call. Folding them together would mean one function whose
+// return type depends on an argument, which is the shape that makes call sites
+// stop reading.
+//
+// What comes back is bytes, not a URL. Persisting them is the caller's problem
+// -- `lib/llm` is a leaf and knows nothing about `MediaAsset`, `public/uploads`,
+// or which content item asked. That boundary is the same one that keeps the
+// text path testable without a network.
+
+/**
+ * An image model, not the text one. `GEMINI_MODEL` steers the text model and
+ * must not steer this: asking a text model for an image yields prose, which is
+ * precisely the bug this file exists to fix.
+ *
+ * Verified against ListModels on 2026-08-26. Two things were true and neither
+ * was guessable from the SDK's types, so they are written down here rather than
+ * rediscovered:
+ *
+ *   1. `models.generateImages` -- the SDK's obvious entry point, and what its
+ *      own docstring demonstrates -- is deprecated, and no Imagen model on this
+ *      API supports the `predict` method it calls. It returns a 404.
+ *   2. Image generation on the Gemini API runs through ordinary
+ *      `generateContent`, against a model whose name ends in `-image`, and the
+ *      picture comes back as an inline data part beside any text.
+ */
+const DEFAULT_IMAGE_MODEL = "gemini-3.1-flash-image";
+
+export function imageModelName(): string {
+  return process.env.GEMINI_IMAGE_MODEL || DEFAULT_IMAGE_MODEL;
+}
+
+/** A call that returned no usable image. */
+export class ImageGenerationError extends Error {
+  readonly code = "IMAGE_GENERATION_FAILED";
+  /** Set when the model declined on safety grounds rather than failing. */
+  readonly filteredReason: string | null;
+
+  constructor(message: string, filteredReason: string | null = null) {
+    super(message);
+    this.name = "ImageGenerationError";
+    this.filteredReason = filteredReason;
+  }
+}
+
+export type GeneratedImageResult = {
+  /** Raw bytes, already base64-decoded. The caller writes or uploads these. */
+  bytes: Buffer;
+  mimeType: string;
+  /** Imagen's rewrite of the prompt, when prompt enhancement returned one. */
+  enhancedPrompt: string | null;
+};
+
+export type GenerateImageOptions = {
+  /** "1:1" | "3:4" | "4:3" | "9:16" | "16:9". Defaults to square. */
+  aspectRatio?: string;
+  /** What to keep out of the frame. */
+  negativePrompt?: string;
+  /** PNG by default -- lossless, and the format the UI serves. */
+  outputMimeType?: string;
+};
+
+/**
+ * One image from one prompt.
+ *
+ * Always one image, never a batch. A plan asking for three visuals is three
+ * items with three prompts, and each one has to be attributable to the item it
+ * illustrates -- `numberOfImages: 3` would return three pictures of the same
+ * sentence with no way to say which belonged where.
+ *
+ * `personGeneration` is left at the API default rather than widened. An agency
+ * drafting content for real brands has no business generating synthetic people
+ * without someone deciding that on purpose.
+ */
+export async function generateImage(
+  prompt: string,
+  options: GenerateImageOptions = {},
+): Promise<GeneratedImageResult> {
+  const text = prompt.trim();
+  if (!text) throw new ImageGenerationError("An image needs a prompt.");
+
+  // Aspect ratio and negatives are not request fields on this path -- there is
+  // no config object for them -- so they are said in the prompt, which is where
+  // an image model reads them from anyway.
+  const framing = [
+    options.aspectRatio ? `Aspect ratio: ${options.aspectRatio}.` : null,
+    options.negativePrompt ? `Avoid: ${options.negativePrompt}.` : null,
+  ].filter(Boolean);
+
+  const fullPrompt = framing.length > 0 ? `${text}
+
+${framing.join(" ")}` : text;
+
+  const response = await ai().models.generateContent({
+    model: imageModelName(),
+    contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
+    config: {
+      // Both, deliberately. These models may narrate what they drew, and asking
+      // for IMAGE alone is rejected on some of them.
+      responseModalities: ["TEXT", "IMAGE"],
+    },
+  });
+
+  const candidate = response.candidates?.[0];
+
+  // A safety refusal arrives as a 200 with no image and a finish reason.
+  // Distinguished from a fault because the remedy differs: a filtered prompt
+  // needs rewording, a fault needs retrying.
+  const finishReason = candidate?.finishReason;
+  if (finishReason && finishReason !== "STOP") {
+    throw new ImageGenerationError(
+      `The image model declined this prompt: ${finishReason}`,
+      String(finishReason),
+    );
+  }
+
+  const parts = candidate?.content?.parts ?? [];
+  const imagePart = parts.find((part) => part.inlineData?.data);
+
+  if (!imagePart?.inlineData?.data) {
+    // The failure this whole feature exists to prevent: the model answering an
+    // image request with prose. Named, so it is not mistaken for an outage.
+    const spoken = parts.find((part) => part.text)?.text;
+    throw new ImageGenerationError(
+      spoken
+        ? `The image model returned text instead of an image: ${spoken.slice(0, 200)}`
+        : "The image model returned no image.",
+    );
+  }
+
+  return {
+    bytes: Buffer.from(imagePart.inlineData.data, "base64"),
+    mimeType: imagePart.inlineData.mimeType ?? options.outputMimeType ?? "image/png",
+    enhancedPrompt: null,
+  };
+}

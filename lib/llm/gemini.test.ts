@@ -17,11 +17,14 @@ vi.mock("@google/genai", () => ({
 }));
 
 import {
+  ImageGenerationError,
   MalformedResponseError,
   MissingApiKeyError,
   TEMPERATURE,
   generateFromImage,
+  generateImage,
   generateStructured,
+  imageModelName,
   isConfigured,
   modelName,
   resetClient,
@@ -39,12 +42,32 @@ function lastRequest() {
 
 const ORIGINAL_ENV = { ...process.env };
 
+/** A 1x1 PNG, base64 as the SDK hands it back. */
+const PNG_B64 =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+
+/** What an image model actually returns: an inline data part, beside any text. */
+function imageResponse(overrides: Record<string, unknown> = {}) {
+  return {
+    candidates: [
+      {
+        finishReason: "STOP",
+        content: {
+          parts: [{ inlineData: { data: PNG_B64, mimeType: "image/png" } }],
+        },
+        ...overrides,
+      },
+    ],
+  };
+}
+
 beforeEach(() => {
   generateContent.mockReset();
   generateContent.mockResolvedValue({ text: '{"ok":true}' });
   resetClient();
   process.env.GEMINI_API_KEY = "test-key";
   delete process.env.GEMINI_MODEL;
+  delete process.env.GEMINI_IMAGE_MODEL;
 });
 
 afterEach(() => {
@@ -218,5 +241,117 @@ describe("failures", () => {
     // hide the status the caller needs to decide.
     generateContent.mockRejectedValue(new Error("429 RESOURCE_EXHAUSTED"));
     await expect(generateStructured("p", SCHEMA)).rejects.toThrow("429 RESOURCE_EXHAUSTED");
+  });
+});
+
+/**
+ * These assert against `generateContent`, not the SDK's `generateImages`.
+ *
+ * That is the correction the live API forced and the reason these tests are
+ * worth having: `generateImages` reads like the obvious entry point and is what
+ * the SDK's own docstring demonstrates, but it is deprecated and no Imagen model
+ * on this API supports the `predict` method behind it -- it 404s. Image
+ * generation runs through ordinary `generateContent` against a `-image` model,
+ * and the picture arrives as an inline data part.
+ */
+describe("image generation", () => {
+  it("decodes the returned inline data into real bytes", async () => {
+    generateContent.mockResolvedValue(imageResponse());
+
+    const result = await generateImage("a cup of coffee");
+
+    // The API hands back base64; writing that string to disk would produce a
+    // file no browser can read.
+    expect(Buffer.isBuffer(result.bytes)).toBe(true);
+    expect(result.bytes.subarray(1, 4).toString()).toBe("PNG");
+    expect(result.mimeType).toBe("image/png");
+  });
+
+  it("asks for an image modality, not just text", async () => {
+    generateContent.mockResolvedValue(imageResponse());
+    await generateImage("a cup of coffee");
+
+    expect(lastConfig().responseModalities).toContain("IMAGE");
+  });
+
+  it("uses the image model, never the text model", async () => {
+    process.env.GEMINI_MODEL = "gemini-3.1-flash-lite";
+    generateContent.mockResolvedValue(imageResponse());
+
+    await generateImage("a cup of coffee");
+
+    // A text model answers an image request with prose -- the original bug.
+    expect(lastRequest().model).not.toBe("gemini-3.1-flash-lite");
+    expect(lastRequest().model).toBe(imageModelName());
+  });
+
+  it("defaults to an image-capable model name", () => {
+    // The `-image` suffix is what separates the two model families; a default
+    // without it is the bug this feature exists to fix.
+    expect(imageModelName()).toMatch(/-image$/);
+  });
+
+  it("lets the image model be overridden on its own key", () => {
+    process.env.GEMINI_IMAGE_MODEL = "gemini-9-test-image";
+    expect(imageModelName()).toBe("gemini-9-test-image");
+  });
+
+  it("carries the aspect ratio in the prompt, since it is not a request field", async () => {
+    generateContent.mockResolvedValue(imageResponse());
+    await generateImage("a reel cover", { aspectRatio: "9:16" });
+
+    const prompt = lastRequest().contents[0].parts[0].text;
+    expect(prompt).toContain("9:16");
+  });
+
+  it("reports a safety refusal as a decline, with its reason", async () => {
+    generateContent.mockResolvedValue(
+      imageResponse({ finishReason: "IMAGE_SAFETY", content: { parts: [] } }),
+    );
+
+    // A refusal is a 200 with no image. Told apart from a fault because the
+    // remedy differs: reword, rather than retry.
+    await expect(generateImage("a person")).rejects.toThrow(ImageGenerationError);
+    await expect(generateImage("a person")).rejects.toMatchObject({
+      filteredReason: "IMAGE_SAFETY",
+    });
+  });
+
+  it("names the failure when the model answers with prose instead of a picture", async () => {
+    generateContent.mockResolvedValue({
+      candidates: [
+        {
+          finishReason: "STOP",
+          content: { parts: [{ text: "Here is a description of the image instead." }] },
+        },
+      ],
+    });
+
+    // Exactly the bug this feature fixes, so it gets its own named error rather
+    // than being reported as an outage.
+    await expect(generateImage("a cup")).rejects.toThrow(/text instead of an image/i);
+  });
+
+  it("treats a response with no candidates as a failure", async () => {
+    generateContent.mockResolvedValue({ candidates: [] });
+    await expect(generateImage("anything")).rejects.toThrow(ImageGenerationError);
+  });
+
+  it("refuses an empty prompt before spending a call", async () => {
+    await expect(generateImage("   ")).rejects.toThrow(ImageGenerationError);
+    expect(generateContent).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a missing key as the named error", async () => {
+    delete process.env.GEMINI_API_KEY;
+    resetClient();
+    await expect(generateImage("a cup of coffee")).rejects.toThrow(MissingApiKeyError);
+  });
+
+  it("lets a quota error through untouched", async () => {
+    // A 429 is the caller's to retry and is what an unbilled key actually
+    // returns for image models; wrapping it would hide the status.
+    generateContent.mockRejectedValue(new Error("429 RESOURCE_EXHAUSTED"));
+    await expect(generateImage("a cup")).rejects.toThrow("429 RESOURCE_EXHAUSTED");
   });
 });

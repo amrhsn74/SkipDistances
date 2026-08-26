@@ -311,11 +311,47 @@ export function normalizeGeneratedPlan(
   };
 }
 
+/**
+ * The platforms a creator may name inline with the form.
+ *
+ * The ERD keeps `content_form` and `platform` as separate fields, but people --
+ * and models trained on how people write -- say "an Instagram post". When the
+ * creator's own words carry the platform, the model echoes it into the form, and
+ * a strict match then refuses a plan that is entirely correct in substance.
+ */
+const PLATFORM_PREFIXES = ["instagram", "tiktok", "facebook", "linkedin", "email"];
+
+/**
+ * A form name, as the ERD defines it.
+ *
+ * Tolerant about *spelling* and strict about *vocabulary*. Case, spacing and
+ * hyphens are normalised, and a platform written into the form is stripped --
+ * "Instagram post" is a `post`, and the platform it names is already its own
+ * field. Anything left that is not in `CONTENT_FORMS` is still refused, because
+ * inventing a form the schema does not have is what this check exists to catch.
+ */
 function normalizeContentForm(value: string): DraftContentForm | null {
   const normalized = value?.trim().toLowerCase().replace(/[\s-]+/g, "_");
-  return CONTENT_FORMS.includes(normalized as DraftContentForm)
-    ? (normalized as DraftContentForm)
-    : null;
+  if (!normalized) return null;
+
+  if (CONTENT_FORMS.includes(normalized as DraftContentForm)) {
+    return normalized as DraftContentForm;
+  }
+
+  // "instagram_post" -> "post". Only a leading platform is stripped: a trailing
+  // one ("post_instagram") is not something either people or models write, and
+  // accepting it would widen the vocabulary for no real case.
+  for (const platform of PLATFORM_PREFIXES) {
+    const prefix = `${platform}_`;
+    if (normalized.startsWith(prefix)) {
+      const rest = normalized.slice(prefix.length);
+      if (CONTENT_FORMS.includes(rest as DraftContentForm)) {
+        return rest as DraftContentForm;
+      }
+    }
+  }
+
+  return null;
 }
 
 function normalizeNullableString(value: string | null | undefined): string | null {

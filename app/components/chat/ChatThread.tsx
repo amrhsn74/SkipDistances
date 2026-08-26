@@ -60,11 +60,22 @@ export function ChatThread({
 }) {
   const router = useRouter();
 
-  const [turns, setTurns] = useState<Turn[]>(initialTurns);
+  // Local turns exist only to show the creator's own message before the server
+  // has confirmed it. Everything else comes from `initialTurns`.
+  const [pending, setPending] = useState<Turn[]>([]);
   const [prompt, setPrompt] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [missing, setMissing] = useState<string[]>([]);
+
+  // The server is the record, and `router.refresh()` re-renders this component
+  // with a new `initialTurns`. Holding the transcript in `useState` seeded from
+  // that prop looked right and was not: `useState`'s initial value is read once,
+  // so every refreshed turn was dropped and the thread appeared to lose messages.
+  // Deriving the list on each render is what makes a refresh actually show up.
+  const turns = [...initialTurns, ...pending.filter(
+    (turn) => !initialTurns.some((existing) => existing.body === turn.body && existing.role === turn.role),
+  )];
 
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -90,7 +101,7 @@ export function ChatThread({
       flag_id: null,
       created_at: new Date().toISOString(),
     };
-    setTurns((current) => [...current, optimistic]);
+    setPending((current) => [...current, optimistic]);
     setPrompt("");
 
     try {
@@ -104,15 +115,29 @@ export function ChatThread({
 
       if (!response.ok) {
         setError(json?.error?.message ?? "That did not go through.");
-        // The optimistic turn is rolled back: it never reached the thread, so
-        // leaving it would show the creator a message the server has no record
-        // of.
-        setTurns((current) => current.filter((t) => t.turn_id !== optimistic.turn_id));
+        // Rolled back and the text handed back to the box, so a failed send
+        // leaves the creator holding their words rather than losing them.
+        setPending((current) => current.filter((t) => t.turn_id !== optimistic.turn_id));
         setPrompt(text);
+        // The turn may still have been stored before the failure -- an engine
+        // fault happens after the creator's turn is written -- so the server is
+        // re-read rather than assumed unchanged.
+        router.refresh();
         return;
       }
 
       setMissing(json.status === "asking" ? (json.missing ?? []) : []);
+
+      // An engine fault comes back as a normal 200 turn, not an error status.
+      // Surfaced so the creator knows to try again rather than reading the
+      // assistant's apology as a considered answer.
+      if (json.status === "failed") {
+        setError("The engine could not produce anything from that. Try again.");
+      }
+
+      // Confirmed by the server, so the local copy is dropped and the refreshed
+      // transcript is the only source.
+      setPending((current) => current.filter((t) => t.turn_id !== optimistic.turn_id));
 
       // The server is the record. Re-reading rather than appending the
       // assistant's reply locally keeps the two from disagreeing about what the
@@ -120,8 +145,9 @@ export function ChatThread({
       router.refresh();
     } catch {
       setError("That did not go through.");
-      setTurns((current) => current.filter((t) => t.turn_id !== optimistic.turn_id));
+      setPending((current) => current.filter((t) => t.turn_id !== optimistic.turn_id));
       setPrompt(text);
+      router.refresh();
     } finally {
       setBusy(false);
     }

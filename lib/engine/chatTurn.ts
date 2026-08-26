@@ -14,6 +14,7 @@ import {
   ConversationNotFoundError,
   ConversationAccessError,
 } from "../domain/conversations";
+import { writeAudit } from "../domain/auditLog";
 import { flagOffTaskGeneration } from "../domain/misuse";
 import { checkTurnOnTask, type OnTaskJudge, type OnTaskVerdict } from "./onTaskCheck";
 import { extractBriefFields, type FieldExtractor } from "./extractBriefFields";
@@ -74,6 +75,18 @@ export type ChatTurnResult =
       accumulated: AccumulatedBrief;
       assistantMessage: string;
       submitted: SubmitBriefResult;
+    }
+  /**
+   * The engine ran and came back with something unusable.
+   *
+   * Distinct from `refused`, which is the engine working correctly and declining
+   * on purpose. This is a fault, and the creator's remedy is to try again rather
+   * than to change what they asked for.
+   */
+  | {
+      status: "failed";
+      accumulated: AccumulatedBrief;
+      assistantMessage: string;
     };
 
 export class ChatTurnError extends Error {
@@ -181,15 +194,50 @@ export async function chatTurn(
 
   // The same function the account manager's form calls. Everything the brief
   // path guarantees follows from this line and nothing else in this module.
-  const submitted = await submitBrief(
-    {
-      clientId: conversation.client_id,
-      rawBriefText: briefText,
-      title: accumulated.fields.objective ?? null,
-    },
-    user.user_id,
-    db,
-  );
+  //
+  // Wrapped, because a conversation must survive a bad generation. The account
+  // manager's form can afford to surface an engine failure as an error page --
+  // they still have their brief and can resubmit it. A creator mid-thread cannot:
+  // an unhandled throw here is a 500 that loses the turn, leaves the thread
+  // looking broken, and gives them nothing to do about it. So a generation that
+  // comes back unusable is reported *as a turn* -- the thread stays intact, the
+  // words are still there, and trying again is one message rather than a reload.
+  let submitted: SubmitBriefResult;
+  try {
+    submitted = await submitBrief(
+      {
+        clientId: conversation.client_id,
+        rawBriefText: briefText,
+        title: accumulated.fields.objective ?? null,
+      },
+      user.user_id,
+      db,
+    );
+  } catch (error) {
+    const assistantMessage =
+      "The engine came back with something I could not use, so nothing was drafted. " +
+      "Try saying that again, or add a little more detail.";
+
+    await appendTurn(user, conversationId, "assistant", assistantMessage, db);
+
+    // Recorded rather than swallowed: an engine returning unusable output
+    // repeatedly is a real problem, and a trail that says only "the creator
+    // asked twice" would hide it.
+    await writeAudit(
+      {
+        entityType: "Conversation",
+        entityId: conversationId,
+        action: "edited",
+        performedById: user.user_id,
+        details: {
+          generation_failed: error instanceof Error ? error.message : String(error),
+        },
+      },
+      db,
+    );
+
+    return { status: "failed", accumulated, assistantMessage };
+  }
 
   await linkCampaign(conversationId, submitted.campaign.campaign_id, db);
 

@@ -50,7 +50,8 @@ export type NavIcon =
   | "guide"
   | "governance"
   | "chat"
-  | "audit";
+  | "audit"
+  | "analytics";
 
 /**
  * The nav for a role.
@@ -77,6 +78,7 @@ export const ROLE_NAV: Record<EffectiveRole, readonly NavItem[]> = {
     // on the briefs queue: a request is not a brief until someone converts it.
     { href: "/AccountManager/requests", label: "Requests", icon: "requests" },
     { href: "/AccountManager/calendar", label: "Calendar", icon: "calendar" },
+    { href: "/AccountManager/analytics", label: "Analytics", icon: "analytics" },
   ],
   content_lead: [
     { href: "/ContentLead", label: "Overview", icon: "overview" },
@@ -97,6 +99,7 @@ export const ROLE_NAV: Record<EffectiveRole, readonly NavItem[]> = {
     // The second thing a client approves, and the one with the wider reach: a
     // guide version changes what every future draft is grounded in.
     { href: "/Client/brand-guide", label: "Brand guide", icon: "guide" },
+    { href: "/Client/analytics", label: "Analytics", icon: "analytics" },
   ],
   agency_admin: [
     { href: "/Admin", label: "Overview", icon: "overview" },

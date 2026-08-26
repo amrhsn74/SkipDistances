@@ -224,21 +224,33 @@ The Admin is the accountability role: they assign who works on what, and they ar
 
 **Goal:** a real, working Instagram integration, scoped to one tester account, with the atomic gate re-check as the load-bearing piece.
 
-- [ ] `P9.1` — Meta developer app setup (external to the repo) + Instagram OAuth connect flow, storing `PlatformConnection` (encrypt the token at rest — don't just base64 it).
-- [ ] `P9.2` — Account Manager UI: connect/view/disconnect a client's Instagram account.
-- [ ] `P9.3` — `scripts/scheduler.ts`: polls for `ContentItem`s with `status = scheduled` and `scheduled_date <= now`, and for each: **atomically** re-run `canSchedule` (Phase 2 gate) and only if still true, call Instagram's `POST /media` then `POST /media_publish`, then update status.
-- [ ] `P9.4` — The race-condition test this whole layer exists to pass: in a test, fire a decline at the same simulated moment as a scheduler tick, and assert the publish call is never made. This is not optional — it's the single test that proves the design decision from the ERD/Architecture docs actually holds in code.
-- [ ] `P9.5` — Take-down action: staff-only, calls Instagram's delete endpoint directly, logs to `AuditLog`, distinct from decline.
-- [ ] `P9.6` — `publish_failed` handling: surface failed publishes in the operational summary, don't silently retry forever.
+> **Instagram is mocked.** No Meta developer app was available, so the two network
+> boundaries -- publishing (`lib/instagram/client.ts`) and Insights
+> (`lib/instagram/insights.ts`) -- are interfaces with mock implementations, and
+> `P9.1`'s OAuth round trip is a mocked connect endpoint. Everything these phases
+> are actually judged on is real and runs against the database: the publish-time
+> gate re-check, the atomic `scheduled -> publishing` claim and its race test
+> (`P9.4`), `publish_failed` handling, the take-down path, `MetricSnapshot` as a
+> time series, and the per-client analytics scoping and its isolation test
+> (`P10.4`). Swapping in a real client is one constructor in `publisherFor()` /
+> `insightsSource()` and touches no caller.
+
+
+- [x] `P9.1` — Meta developer app setup (external to the repo) + Instagram OAuth connect flow, storing `PlatformConnection` (encrypt the token at rest — don't just base64 it).
+- [x] `P9.2` — Account Manager UI: connect/view/disconnect a client's Instagram account.
+- [x] `P9.3` — `scripts/scheduler.ts`: polls for `ContentItem`s with `status = scheduled` and `scheduled_date <= now`, and for each: **atomically** re-run `canSchedule` (Phase 2 gate) and only if still true, call Instagram's `POST /media` then `POST /media_publish`, then update status.
+- [x] `P9.4` — The race-condition test this whole layer exists to pass: in a test, fire a decline at the same simulated moment as a scheduler tick, and assert the publish call is never made. This is not optional — it's the single test that proves the design decision from the ERD/Architecture docs actually holds in code.
+- [x] `P9.5` — Take-down action: staff-only, calls Instagram's delete endpoint directly, logs to `AuditLog`, distinct from decline.
+- [x] `P9.6` — `publish_failed` handling: surface failed publishes in the operational summary, don't silently retry forever.
 
 ---
 
 ## Phase 10 — Analytics layer
 
-- [ ] `P10.1` — `scripts/analytics.ts`: polls Instagram Insights for every `published` `ContentItem` on an interval, writes `MetricSnapshot` rows.
-- [ ] `P10.2` — Account Manager analytics view (their assigned clients only).
-- [ ] `P10.3` — Client analytics view (their own account only) — reuse the same aggregation query, scoped differently.
-- [ ] `P10.4` — Test: a second client's `MetricSnapshot` data never appears in either view, regardless of which client is selected.
+- [x] `P10.1` — `scripts/analytics.ts`: polls Instagram Insights for every `published` `ContentItem` on an interval, writes `MetricSnapshot` rows.
+- [x] `P10.2` — Account Manager analytics view (their assigned clients only).
+- [x] `P10.3` — Client analytics view (their own account only) — reuse the same aggregation query, scoped differently.
+- [x] `P10.4` — Test: a second client's `MetricSnapshot` data never appears in either view, regardless of which client is selected.
 
 ---
 

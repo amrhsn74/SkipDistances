@@ -65,6 +65,17 @@ export async function POST(request: Request, { params }: { params: { id: string 
       });
     }
 
+    if (result.status === "failed") {
+      // 200, not 500. The engine ran, the turn is stored, and the thread is
+      // intact -- the creator's remedy is to send another message, which is a
+      // normal conversational outcome rather than a broken request.
+      return NextResponse.json({
+        status: result.status,
+        assistant_message: result.assistantMessage,
+        fields: result.accumulated.fields,
+      });
+    }
+
     const { submitted } = result;
 
     // `submitted.run` carries the whole engine trace -- every retrieved clause,

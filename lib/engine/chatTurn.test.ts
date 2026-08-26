@@ -105,8 +105,17 @@ describe("an incomplete thread", () => {
 
     expect(result.status).toBe("asking");
     if (result.status !== "asking") return;
-    expect(result.assistantMessage).toBe("Who is it speaking to?");
-    expect(result.accumulated.missing).toEqual(["audience", "channels"]);
+
+    // NileFit's own guide states its audience (NF.2), so the engine does not
+    // ask the creator to retype it -- and does not guess it either: the value is
+    // the client's written rule, attributed to the clause it came from. What the
+    // guide does not answer is still a real question, and is the one asked.
+    expect(result.accumulated.fields.audience).toBe(
+      "18–30, casual exercisers, Cairo and Alexandria; beginners, not athletes.",
+    );
+    expect(result.accumulated.fromGuide.audience).toBe("NF.2");
+    expect(result.assistantMessage).toBe("Which channels should it run on?");
+    expect(result.accumulated.missing).toEqual(["channels"]);
 
     // Nothing was produced. This is the assertion that keeps Clause 0.5 real.
     const campaigns = await prisma.campaign.count({ where: { submitted_by_id: CREATOR } });

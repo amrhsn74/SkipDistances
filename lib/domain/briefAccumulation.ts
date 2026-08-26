@@ -3,6 +3,7 @@ import {
   isMissing,
   type RequiredBriefField,
 } from "./completeness";
+import type { GuideDefaults } from "./guideDefaults";
 
 /**
  * Folding a conversation into a brief.
@@ -72,6 +73,16 @@ export type AccumulatedBrief = {
   fields: Partial<Record<RequiredBriefField, string>>;
   missing: RequiredBriefField[];
   complete: boolean;
+  /**
+   * Fields answered by the client's brand guide rather than by the creator,
+   * mapped to the clause that answered them.
+   *
+   * Kept separate from `fields` so the distinction survives to the UI and the
+   * audit trail: "the creator said new mums" and "CR.2 says premium buyers" are
+   * both legitimate, but only the second is something a reviewer can check
+   * against a written rule.
+   */
+  fromGuide: Partial<Record<RequiredBriefField, string>>;
 };
 
 /**
@@ -94,8 +105,31 @@ export type TurnExtraction = Partial<Record<RequiredBriefField, string | null>>;
  * yet" after naming an audience is hesitation, not retraction, and treating it
  * as an erasure would drop information the creator had already given.
  */
-export function foldExtractions(extractions: TurnExtraction[]): AccumulatedBrief {
+export function foldExtractions(
+  extractions: TurnExtraction[],
+  /**
+   * What the client's own guide already states, underneath the conversation.
+   *
+   * Not a guess and not a default in the usual sense: it is the client's written
+   * rule, carrying the clause code that says so. Clause 0.5 forbids *guessing* a
+   * missing field -- it does not require asking a creator to retype a rule the
+   * agency already holds and that Clause 0.4 would make binding anyway.
+   *
+   * Applied first, so anything the creator states overrides it. A campaign may
+   * legitimately address a slice of the brand's audience, and the creator saying
+   * so is more specific information, not less.
+   */
+  defaults: GuideDefaults = {},
+): AccumulatedBrief {
   const fields: Partial<Record<RequiredBriefField, string>> = {};
+  const fromGuide: Partial<Record<RequiredBriefField, string>> = {};
+
+  for (const field of REQUIRED_BRIEF_FIELDS) {
+    const supplied = defaults[field];
+    if (!supplied || statesNothing(supplied.value)) continue;
+    fields[field] = supplied.value.trim();
+    if (supplied.clauseCode) fromGuide[field] = supplied.clauseCode;
+  }
 
   for (const extraction of extractions) {
     for (const field of REQUIRED_BRIEF_FIELDS) {
@@ -105,12 +139,15 @@ export function foldExtractions(extractions: TurnExtraction[]): AccumulatedBrief
       // had already told us.
       if (statesNothing(value)) continue;
       fields[field] = (value as string).trim();
+      // The creator has spoken to this field, so it is no longer the guide's
+      // answer even if it happens to agree with it.
+      delete fromGuide[field];
     }
   }
 
   const missing = REQUIRED_BRIEF_FIELDS.filter((field) => statesNothing(fields[field]));
 
-  return { fields, missing, complete: missing.length === 0 };
+  return { fields, missing, complete: missing.length === 0, fromGuide };
 }
 
 /**
@@ -165,13 +202,22 @@ export function toBriefText(
    */
   clientId?: string | null,
 ): string {
+  // A field the guide answered is written with its clause, so a reviewer reading
+  // the brief can tell what the creator asked for from what the brand guide
+  // already required -- and `analyzeBrief` reads the same text either way.
+  const attributed = (field: "objective" | "audience" | "channels"): string => {
+    const value = accumulated.fields[field] ?? "";
+    const clause = accumulated.fromGuide[field];
+    return clause && value ? `${value} (per Clause ${clause})` : value;
+  };
+
   const lines = [
     `Client: ${[clientName ?? accumulated.fields.client ?? "", clientId ? `(${clientId})` : ""]
       .filter(Boolean)
       .join(" ")}`,
-    `Objective: ${accumulated.fields.objective ?? ""}`,
-    `Audience: ${accumulated.fields.audience ?? ""}`,
-    `Channels: ${accumulated.fields.channels ?? ""}`,
+    `Objective: ${attributed("objective")}`,
+    `Audience: ${attributed("audience")}`,
+    `Channels: ${attributed("channels")}`,
   ];
 
   const said = turns

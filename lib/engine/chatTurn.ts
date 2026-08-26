@@ -14,6 +14,8 @@ import {
   ConversationNotFoundError,
   ConversationAccessError,
 } from "../domain/conversations";
+import { guideDefaults, type GuideDefaults } from "../domain/guideDefaults";
+import { getGuidelinesForClient } from "../domain/retrievalScope";
 import { writeAudit } from "../domain/auditLog";
 import { flagOffTaskGeneration } from "../domain/misuse";
 import { checkTurnOnTask, type OnTaskJudge, type OnTaskVerdict } from "./onTaskCheck";
@@ -127,10 +129,27 @@ export async function chatTurn(
     throw new ConversationAccessError(conversationId, user.user_id);
   }
 
+  // What this client's own brand guide already answers. Every brand guide states
+  // an audience clause and several name their channels, so asking the creator
+  // for them is asking them to retype a rule the agency holds -- and inviting an
+  // answer that contradicts it, which Clause 0.4 would then have to flag.
+  //
+  // The same double-scoped query the drafting step uses, so a thread can only
+  // ever be seeded from its own client's active guide.
+  const defaults: GuideDefaults = {
+    // The thread's client, which is known by construction: a conversation is
+    // opened against one client and `toBriefText` files the brief under it
+    // regardless. Asking "which client is this for?" could therefore never be a
+    // question worth asking -- it was reachable only because the fold could not
+    // see what the thread already knew.
+    client: { value: conversation.client.name },
+    ...guideDefaults((await getGuidelinesForClient(conversation.client_id, db)).all),
+  };
+
   // What the thread already established, before this turn is considered. Used
   // both to judge the turn and, if it is allowed, as the base of the fold.
   const priorExtractions = await extractionsFor(conversation.turns, dependencies);
-  const prior = foldExtractions(priorExtractions);
+  const prior = foldExtractions(priorExtractions, defaults);
 
   // --- 1. Is this turn part of this thread's work? ---
   const verdict = await checkTurnOnTask(
@@ -172,7 +191,7 @@ export async function chatTurn(
 
   // --- 2. What did this turn add? ---
   const extraction = await dependencies.extract(text, conversation.client.name);
-  const accumulated = foldExtractions([...priorExtractions, extraction]);
+  const accumulated = foldExtractions([...priorExtractions, extraction], defaults);
 
   // --- 3. Ask, or produce. ---
   const question = nextQuestion(accumulated);

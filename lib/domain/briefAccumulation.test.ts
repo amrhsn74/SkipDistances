@@ -96,6 +96,70 @@ describe("folding turns into a brief", () => {
   });
 });
 
+describe("what the client's guide already answers", () => {
+  const CR2 = { audience: { value: "25-45 premium buyers", clauseCode: "CR.2" } };
+
+  it("does not ask for an audience the brand guide states", () => {
+    const result = foldExtractions(
+      [{ client: "Cairo Roast", objective: "launch cold brew", audience: null, channels: "instagram" }],
+      CR2,
+    );
+
+    expect(result.complete).toBe(true);
+    expect(result.fields.audience).toBe("25-45 premium buyers");
+    expect(result.fromGuide.audience).toBe("CR.2");
+    expect(nextQuestion(result)).toBeNull();
+  });
+
+  it("lets the creator's own answer override the guide", () => {
+    // A campaign may address a slice of the brand's audience. That is more
+    // specific information, not a contradiction, and the creator wins.
+    const result = foldExtractions(
+      [{ client: null, objective: null, audience: "office workers", channels: null }],
+      CR2,
+    );
+
+    expect(result.fields.audience).toBe("office workers");
+    // No longer the guide's answer, so it is not attributed to a clause.
+    expect(result.fromGuide.audience).toBeUndefined();
+  });
+
+  it("still asks for what neither the guide nor the creator has stated", () => {
+    // Cairo Roast's guide names no channel, so the channel remains a real
+    // question -- the point is to stop asking what is known, not to stop asking.
+    const result = foldExtractions(
+      [{ client: "Cairo Roast", objective: "launch cold brew", audience: null, channels: null }],
+      CR2,
+    );
+
+    expect(result.missing).toEqual(["channels"]);
+    expect(nextQuestion(result)).toBe("Which channels should it run on?");
+  });
+
+  it("never lets the guide supply an objective", () => {
+    const result = foldExtractions(
+      [{ client: "Cairo Roast", objective: null, audience: null, channels: "instagram" }],
+      CR2,
+    );
+
+    expect(result.missing).toEqual(["objective"]);
+    expect(nextQuestion(result)).toBe("What should this campaign achieve?");
+  });
+
+  it("marks a guide-sourced field with its clause in the brief text", () => {
+    const result = foldExtractions(
+      [{ client: null, objective: "launch cold brew", audience: null, channels: "instagram" }],
+      CR2,
+    );
+
+    const text = toBriefText(result, [], "Cairo Roast", "CL-101");
+
+    expect(text).toContain("Audience: 25-45 premium buyers (per Clause CR.2)");
+    // The creator's own words carry no citation they did not earn.
+    expect(text).toContain("Channels: instagram");
+  });
+});
+
 describe("the next question", () => {
   it("asks for one field at a time, in the clause's order", () => {
     const result = foldExtractions([

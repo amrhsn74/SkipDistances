@@ -266,3 +266,96 @@ export function serializeCreatorItem(item: CreatorItem) {
 }
 
 export type CreatorItemSerialized = ReturnType<typeof serializeCreatorItem>;
+
+/**
+ * The creator's overview counts, and their clients.
+ *
+ * A different question from `creatorQueue`, which lists rows. This one answers
+ * "what needs me", and the distinction it draws is the point: `flagged`,
+ * `inProgress` and `assigned` are work stuck on this person, while
+ * `awaitingReview` is work they have already handed on. A panel that summed all
+ * four into one "your work" number would tell a creator to act on something that
+ * is somebody else's move.
+ *
+ * Scoped through `clientScopeWhere`, the same call the queue makes -- so the
+ * overview and the list it links into cannot disagree about what is in scope.
+ */
+export type CreatorOverviewData = {
+  counts: {
+    flagged: number;
+    inProgress: number;
+    assigned: number;
+    awaitingReview: number;
+  };
+  clients: {
+    client_id: string;
+    name: string;
+    inProgress: number;
+    flagged: number;
+  }[];
+};
+
+/** Statuses a creator still has to act on, as opposed to wait on. */
+const IN_PROGRESS: readonly ContentStatus[] = ["drafted", "in_refinement"];
+
+export async function creatorOverview(
+  user: ScopeUser,
+  db: Db = prisma,
+): Promise<CreatorOverviewData> {
+  const scope = await clientScopeWhere(user, db);
+  const mine = { campaign: { is: scope } };
+
+  const [flagged, inProgress, assigned, awaitingReview, byClient, clients] = await Promise.all([
+    db.contentItem.count({ where: { ...mine, status: "flagged" } }),
+    db.contentItem.count({ where: { ...mine, status: { in: [...IN_PROGRESS] } } }),
+    // Handed over by a lead and not yet submitted. Counted on `assigned_to_id`
+    // rather than on scope, because this is the one number that is about *this
+    // person* rather than about their clients.
+    db.contentItem.count({
+      where: {
+        ...mine,
+        assigned_to_id: user.user_id,
+        status: { in: [...IN_PROGRESS, "flagged"] },
+      },
+    }),
+    db.contentItem.count({ where: { ...mine, status: "pending_internal_review" } }),
+    db.contentItem.groupBy({
+      by: ["campaign_id", "status"],
+      where: { ...mine, status: { in: [...IN_PROGRESS, "flagged"] } },
+      _count: { _all: true },
+    }),
+    db.client.findMany({
+      where: scope,
+      select: { client_id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
+
+  // `groupBy` can only group by a column on the row itself, so the campaign ids
+  // are resolved to clients in a second pass rather than by loading every item.
+  const campaigns = await db.campaign.findMany({
+    where: { campaign_id: { in: byClient.map((row) => row.campaign_id) } },
+    select: { campaign_id: true, client_id: true },
+  });
+  const clientOfCampaign = new Map(campaigns.map((c) => [c.campaign_id, c.client_id]));
+
+  const tally = new Map<string, { inProgress: number; flagged: number }>();
+  for (const row of byClient) {
+    const clientId = clientOfCampaign.get(row.campaign_id);
+    if (!clientId) continue;
+    const entry = tally.get(clientId) ?? { inProgress: 0, flagged: 0 };
+    if (row.status === "flagged") entry.flagged += row._count._all;
+    else entry.inProgress += row._count._all;
+    tally.set(clientId, entry);
+  }
+
+  return {
+    counts: { flagged, inProgress, assigned, awaitingReview },
+    clients: clients.map((client) => ({
+      client_id: client.client_id,
+      name: client.name,
+      inProgress: tally.get(client.client_id)?.inProgress ?? 0,
+      flagged: tally.get(client.client_id)?.flagged ?? 0,
+    })),
+  };
+}

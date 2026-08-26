@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 
 import { prisma } from "../db";
-import { creatorQueue } from "./creatorQueue";
+import { creatorOverview, creatorQueue } from "./creatorQueue";
 
 /**
  * What a creator has in front of them, and what they do not.
@@ -197,5 +197,75 @@ describe("what a flagged card carries", () => {
 
     expect(page.rows.length).toBeGreaterThan(0);
     expect(page.rows.every((r) => r.status === "flagged")).toBe(true);
+  });
+});
+
+/**
+ * The overview counts.
+ *
+ * The distinction worth pinning is between work stuck on this person and work
+ * they have handed on. A panel that summed the two would tell a creator to act
+ * on something that is a reviewer's move.
+ */
+describe("creatorOverview", () => {
+  it("separates work stuck on the creator from work already handed on", async () => {
+    const campaignId = await createCampaign("CL-101");
+    await createItem(campaignId, "drafted");
+    await createItem(campaignId, "in_refinement");
+    await createItem(campaignId, "flagged");
+    await createItem(campaignId, "pending_internal_review");
+
+    const { counts } = await creatorOverview(mona);
+
+    expect(counts.flagged).toBeGreaterThanOrEqual(1);
+    expect(counts.inProgress).toBeGreaterThanOrEqual(2);
+    // Submitted, and therefore a reviewer's move rather than the creator's.
+    expect(counts.awaitingReview).toBeGreaterThanOrEqual(1);
+  });
+
+  it("counts as assigned only what was dispatched to this creator", async () => {
+    const campaignId = await createCampaign("CL-101");
+    const mine = await createItem(campaignId, "drafted");
+    await createItem(campaignId, "drafted");
+
+    await prisma.contentItem.update({
+      where: { content_item_id: mine.content_item_id },
+      data: { assigned_to_id: mona.user_id },
+    });
+
+    const before = await creatorOverview(mona);
+    expect(before.counts.assigned).toBe(1);
+
+    // Dispatched to someone else on the same client: in scope, but not theirs.
+    await prisma.contentItem.update({
+      where: { content_item_id: mine.content_item_id },
+      data: { assigned_to_id: nour.user_id },
+    });
+
+    const after = await creatorOverview(mona);
+    expect(after.counts.assigned).toBe(0);
+  });
+
+  it("never counts a client the creator is not assigned to", async () => {
+    const campaignId = await createCampaign("CL-103");
+    await createItem(campaignId, "flagged");
+
+    const { clients } = await creatorOverview(mona);
+
+    // Nour holds CL-103; Mona does not.
+    expect(clients.map((c) => c.client_id)).not.toContain("CL-103");
+  });
+
+  it("breaks the counts down per client", async () => {
+    const campaignId = await createCampaign("CL-101");
+    await createItem(campaignId, "flagged");
+    await createItem(campaignId, "drafted");
+
+    const { clients } = await creatorOverview(mona);
+    const row = clients.find((c) => c.client_id === "CL-101");
+
+    expect(row).toBeDefined();
+    expect(row!.flagged).toBeGreaterThanOrEqual(1);
+    expect(row!.inProgress).toBeGreaterThanOrEqual(1);
   });
 });

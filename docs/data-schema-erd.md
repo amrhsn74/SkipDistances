@@ -304,6 +304,33 @@ The things the product stores: clients and the market they operate in, the peopl
 
 > A Comment never triggers an approval reset — only a formal Approval decline or a deliberate edit does.
 
+**Conversation** — an ongoing exchange between one staff member and the engine, scoped to one client (Phase 14)
+| Field | Notes |
+|---|---|
+| `conversation_id` PK | |
+| `client_id` FK → Client | the scope. Every retrieval, every grounding decision and every access check reads it — a conversation is *about* one client, and cannot drift to another |
+| `created_by_id` FK → User, nullable | the creator or content lead who owns the thread |
+| `campaign_id` FK → Campaign, nullable | set once the thread has said enough to produce work. Null while it is still being assembled |
+| `title`, `status` | `active` \| `archived` |
+
+> **Why a `campaign_id` at all.** Items must stay linked to the brief they came from (PRD §3), and a conversation *is* the brief in this path — assembled over turns rather than submitted at once. So when the exchange first has enough to work from, a real `Campaign` row is created and everything the thread produces hangs off it exactly as a submitted brief's items do. Downstream — the review queues, the gate, analytics — nothing can tell the two apart, which is the point.
+>
+> Nullable until then, because a thread that has not yet named an objective is not yet a campaign, and writing an empty one would put half-formed rows in the account manager's queue.
+
+**ConversationTurn** — one message in a thread
+| Field | Notes |
+|---|---|
+| `turn_id` PK | |
+| `conversation_id` FK → Conversation | |
+| `role` | `creator` \| `assistant` \| `system` |
+| `body` | what was said |
+| `flag_id` FK → Flag, nullable | set when this turn was refused, linking the Admin's queue row to the turn in its thread |
+| `created_at` | ordering is by time; turns are never edited or deleted |
+
+> **The transcript is evidence, not a convenience.** Turns are append-only for the same reason `AuditLog` is: the Admin's misuse queue judges conduct across a conversation, and a record someone can revise after the fact proves nothing. A refused turn is kept, with `flag_id` pointing at the reason — so the queue shows what was asked, in what context, rather than an isolated excerpt.
+>
+> `ReferenceAttachment.turn_id` (nullable) puts an attached file on the turn it arrived on. The existing `content_item_id` stays, so material attached before Phase 14 is untouched.
+
 ---
 
 ## 3. PRD roles → schema representation
@@ -313,10 +340,10 @@ Five user types, none with a dedicated table — each is a `User` plus, for clie
 | Role | user_type | role_on_client | Sees | Notes |
 |---|---|---|---|---|
 | **Account Manager** | `staff` | — (Client.account_manager_id) | Clients they manage | Submits briefs; is the internal reviewer unless a content lead is assigned; creates clients and their client contacts; manages PlatformConnection; converts PostRequests. |
-| **Content Creator** *(incl. Marketing Specialist)* | `staff` | `content_creator` | Clients they are assigned to | Zero or more per client; authors the full multi-form plan; refines drafts pre-internal-review; attaches image/PDF/doc references when prompting generation or regeneration. |
-| **Content Lead** | `staff` | `content_lead` | All clients | Optional per client; replaces the account manager as internal reviewer for that client, with the same late-revoke power. Reviews across accounts, so unlike the creator their view is not scoped by assignment. |
+| **Content Creator** *(incl. Marketing Specialist)* | `staff` | `content_creator` | Clients they are assigned to | Zero or more per client; originates content in a `Conversation` scoped to one of their clients; refines drafts pre-internal-review; attaches image/PDF/doc references when prompting generation or regeneration. May be handed an item by a lead via `ContentItem.assigned_to_id`. |
+| **Content Lead** | `staff` | `content_lead` | All clients | Optional per client; prompts the engine in a `Conversation` as a creator does, and dispatches what it produces to a creator via `ContentItem.assigned_to_id`. Replaces the account manager as internal reviewer for that client, with the same late-revoke power. Reviews across accounts, so unlike the creator their view is not scoped by assignment. |
 | **Client** | `client_contact` | `client_approver` | Their own client only | One or more per client. Created by their account manager and activated with a one-time code. Approves/declines via the same Approval table, stage = client. Sees their assigned account manager; raises PostRequests and Comments; views their own analytics. |
-| **Agency Admin** | `staff`, admin=true | — | All clients | Not tied to any one client; edits account_manager_id on Client and rows in ClientAssignment directly. The accountability role: the only reader of the governance `Flag` queue and the only role that can change who works on what. Every assignment change they make writes an `AuditLog` row naming them. |
+| **Agency Admin** | `staff`, admin=true | — | All clients | Not tied to any one client; edits account_manager_id on Client and rows in ClientAssignment directly. The accountability role: the only reader of the governance `Flag` queue, and the reader of conversation transcripts behind an `off_task_generation` flag. Since Phase 14 the account manager also holds `client.assign_roles`, so the admin's staffing power is a backstop rather than exclusive. Every assignment change either of them makes writes an `AuditLog` row naming them. |
 
 > Two roles see every client — the Content Lead, because reviewing spans accounts, and the Agency Admin, because oversight is the job. The other three are scoped, and the scope is derived from the signed-in user on every request rather than from anything the browser supplies.
 
@@ -448,6 +475,9 @@ erDiagram
 | Nothing scheduled or published without both current approvals | Atomic gate re-check in the scheduler — dedicated race-condition test |
 | A published post cannot be silently declined | status = published excluded from decline; separate take-down action |
 | No client's content or guide visible to another client | Every content-bearing table scoped by client_id via campaign_id → Client, filtered by `visibleClientIds(user)` derived from the session |
-| Creator can attach reference files for content generation | `ReferenceAttachment`, scoped to one content_item_id, creator-only, image/PDF/doc only |
+| Creator can attach reference files for content generation | `ReferenceAttachment`, scoped to one content_item_id, creator-only, image/PDF/doc only; `turn_id` links it to the conversation turn it arrived on |
+| Creators and the content lead produce content by prompting the model | `Conversation` + `ConversationTurn`, scoped by client_id; items produced through the same engine and gate as a submitted brief |
+| Misuse of the engine is visible to the Admin | `Flag.flag_type = off_task_generation` + `ConversationTurn.flag_id` — the queue row opens the thread around the refused turn |
+| A lead can hand a produced item to a creator | `ContentItem.assigned_to_id`, nullable; dispatch only, grants no access and gates no approval |
 | Every role signs in; a client contact is created for them | `User.email` / `password_hash` / `status`, `LoginOtp`, `Session` — account manager issues a one-time code, client redeems it and sets a password |
 | Access differs by role | Client → own client; Account Manager → `account_manager_id` matches; Content Creator → `ClientAssignment` rows; Content Lead and Agency Admin → all clients |

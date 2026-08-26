@@ -21,6 +21,11 @@ export const AUDIT_ACTIONS = [
   "declined",
   "flag_raised",
   "flag_resolved",
+  // Dispatching an item to a creator (Phase 14). Its own action rather than an
+  // `edited` row: who was handed the work is a different question from what the
+  // work says, and a reviewer reading the trail should not have to open the
+  // details blob to tell the two apart.
+  "assigned",
   "published",
   "take_down",
 ] as const;

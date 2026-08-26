@@ -33,7 +33,7 @@ model User {
   password_hash String?
 
   /// staff | client_contact
-  user_type String
+  user_type       String
   /// staff only; assigns roles on client records
   is_agency_admin Boolean @default(false)
 
@@ -50,20 +50,22 @@ model User {
 
   created_at DateTime @default(now())
 
-  assignments         ClientAssignment[]
-  managed_clients     Client[]              @relation("AccountManager")
-  submitted_campaigns Campaign[]            @relation("SubmittedCampaigns")
-  flags_raised_against Flag[]              @relation("FlagsRaisedAgainst")
-  approval_decisions  Approval[]            @relation("ApprovalDecisions")
-  platform_connections PlatformConnection[] @relation("PlatformConnections")
-  post_requests       PostRequest[]         @relation("PostRequests")
-  authored_comments   Comment[]             @relation("AuthoredComments")
-  audit_entries       AuditLog[]            @relation("AuditEntries")
-  uploaded_media      MediaAsset[]          @relation("UploadedMedia")
-  uploaded_references ReferenceAttachment[] @relation("UploadedReferences")
-  sessions            Session[]
-  login_otps          LoginOtp[]            @relation("OtpRecipient")
-  issued_otps         LoginOtp[]            @relation("OtpIssuer")
+  assignments          ClientAssignment[]
+  managed_clients      Client[]              @relation("AccountManager")
+  submitted_campaigns  Campaign[]            @relation("SubmittedCampaigns")
+  flags_raised_against Flag[]                @relation("FlagsRaisedAgainst")
+  approval_decisions   Approval[]            @relation("ApprovalDecisions")
+  platform_connections PlatformConnection[]  @relation("PlatformConnections")
+  post_requests        PostRequest[]         @relation("PostRequests")
+  authored_comments    Comment[]             @relation("AuthoredComments")
+  audit_entries        AuditLog[]            @relation("AuditEntries")
+  uploaded_media       MediaAsset[]          @relation("UploadedMedia")
+  uploaded_references  ReferenceAttachment[] @relation("UploadedReferences")
+  assigned_items       ContentItem[]         @relation("AssignedContentItems")
+  conversations        Conversation[]        @relation("AuthoredConversations")
+  sessions             Session[]
+  login_otps           LoginOtp[]            @relation("OtpRecipient")
+  issued_otps          LoginOtp[]            @relation("OtpIssuer")
 
   @@index([user_type])
   @@index([status])
@@ -125,9 +127,9 @@ model Session {
 
 /// Per-client team, beyond the default account manager.
 model ClientAssignment {
-  assignment_id String @id @default(cuid())
-  client_id     String
-  user_id       String
+  assignment_id  String @id @default(cuid())
+  client_id      String
+  user_id        String
   /// content_lead | content_creator | client_approver
   role_on_client String
 
@@ -147,7 +149,7 @@ model ClientAssignment {
 // ---------------------------------------------------------------------------
 
 model Client {
-  client_id String @id
+  client_id String  @id
   name      String
   /// Free text in the seed roster -- 18 distinct values across 150 clients.
   /// Never compare it with equality; lib/domain/sensitiveSector.ts normalizes.
@@ -174,7 +176,7 @@ model Client {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  account_manager User?   @relation("AccountManager", fields: [account_manager_id], references: [user_id], onDelete: SetNull)
+  account_manager User? @relation("AccountManager", fields: [account_manager_id], references: [user_id], onDelete: SetNull)
 
   markets              ClientMarket[]
   assignments          ClientAssignment[]
@@ -182,6 +184,7 @@ model Client {
   campaigns            Campaign[]
   platform_connections PlatformConnection[]
   post_requests        PostRequest[]
+  conversations        Conversation[]
 
   @@index([status])
   @@index([account_manager_id])
@@ -190,9 +193,9 @@ model Client {
 /// Seeded with two rows: Egypt and Saudi Arabia. A real table rather than a
 /// hardcoded enum, so a third market is a data insert, not a migration.
 model Market {
-  market_id    String @id @default(cuid())
-  name         String @unique
-  country_code String @unique
+  market_id       String @id @default(cuid())
+  name            String @unique
+  country_code    String @unique
   /// informational -- e.g. "gregorian_and_hijri"
   calendar_system String
   /// IANA zone, e.g. "Africa/Cairo". The reason scheduling needs it: an item
@@ -200,7 +203,7 @@ model Market {
   /// Egypt and Saudi are an hour apart -- storing only UTC and rendering in the
   /// viewer's zone would show a Cairo campaign at the wrong hour to a Riyadh
   /// reader, and vice versa.
-  timezone String @default("Africa/Cairo")
+  timezone        String @default("Africa/Cairo")
 
   clients       ClientMarket[]
   occasions     Occasion[]
@@ -236,8 +239,8 @@ model BrandGuideVersion {
   /// draft | pending_client_approval | active | superseded
   status                 String
 
-  created_by_id          String?
-  client_approved_by_id  String?
+  created_by_id         String?
+  client_approved_by_id String?
 
   created_at  DateTime  @default(now())
   approved_at DateTime?
@@ -257,7 +260,7 @@ model BrandGuideVersion {
 /// against -- "0.6", "1.3", "CR.4", "NF.2" -- so it must match the source
 /// markdown exactly.
 model GuidelineClause {
-  clause_id String @id @default(cuid())
+  clause_id              String  @id @default(cuid())
   /// agency | brand
   source_type            String
   brand_guide_version_id String?
@@ -347,7 +350,7 @@ model Campaign {
 
   /// True if the brief tried to skip or fake approval (Clause 0.2/0.3).
   /// Recorded, never obeyed -- and never a reason to refuse drafting outright.
-  override_attempt_detected Boolean @default(false)
+  override_attempt_detected  Boolean @default(false)
   /// True for sensitive-sector clients (Clause 1.8), even on an otherwise
   /// clean brief.
   compliance_review_required Boolean @default(false)
@@ -361,6 +364,7 @@ model Campaign {
 
   content_items ContentItem[]
   flags         Flag[]
+  conversations Conversation[]
 
   @@index([client_id, status])
   @@index([status])
@@ -399,8 +403,21 @@ model ContentItem {
 
   /// Primary rule broken, if flagged.
   flagged_clause_id String?
+
+  /// The creator this item is dispatched to, set by a content lead (Phase 14).
+  ///
+  /// Nullable, and null is not "unowned" -- an item a creator produced in their
+  /// own conversation is already theirs by authorship and needs no assignment.
+  /// This field exists for the other direction: a lead who prompted the engine
+  /// and is handing the result to someone to finish.
+  ///
+  /// Carries no authority of its own. It does not widen what the assignee may
+  /// see -- `ClientAssignment` still decides that -- and it gates nothing in the
+  /// approval path. An item assigned to nobody is still reviewable and still
+  /// publishable; assignment is dispatch, not a permission.
+  assigned_to_id                  String?
   /// Self-reference for A/B variants.
-  parent_content_item_id String?
+  parent_content_item_id          String?
   /// Version active at draft time -- frozen even if the guide is edited later.
   grounded_brand_guide_version_id String?
 
@@ -410,18 +427,24 @@ model ContentItem {
   campaign Campaign @relation(fields: [campaign_id], references: [campaign_id], onDelete: Cascade)
   market   Market?  @relation(fields: [market_id], references: [market_id], onDelete: SetNull)
 
+  /// SetNull rather than Cascade: a creator leaving the agency must not delete
+  /// the work they were handed.
+  assigned_to User? @relation("AssignedContentItems", fields: [assigned_to_id], references: [user_id], onDelete: SetNull)
+
   parent   ContentItem?  @relation("ABVariant", fields: [parent_content_item_id], references: [content_item_id], onDelete: SetNull)
   variants ContentItem[] @relation("ABVariant")
 
-  citations   ContentItemCitation[]
-  media       MediaAsset[]
-  references  ReferenceAttachment[]
-  metrics     MetricSnapshot[]
-  comments    Comment[]
+  citations  ContentItemCitation[]
+  media      MediaAsset[]
+  references ReferenceAttachment[]
+  metrics    MetricSnapshot[]
+  comments   Comment[]
 
   @@index([campaign_id, status])
   @@index([status, scheduled_date])
   @@index([market_id])
+  // The assignee's own queue read: what is dispatched to me, by status.
+  @@index([assigned_to_id, status])
 }
 
 /// Every drafted item can be grounded in more than one clause -- an agency
@@ -471,9 +494,14 @@ model MediaAsset {
 model ReferenceAttachment {
   attachment_id   String @id @default(cuid())
   content_item_id String
+
+  /// The conversation turn this file arrived on (Phase 14). Null for material
+  /// attached through the item-level regeneration path, which predates
+  /// conversations and still works exactly as it did.
+  turn_id        String?
   /// Must resolve to role_on_client = content_creator -- enforced in the
   /// domain layer.
-  uploaded_by_id  String?
+  uploaded_by_id String?
 
   /// image | pdf | doc -- no video (PRD §4, out of scope)
   file_type   String
@@ -483,10 +511,12 @@ model ReferenceAttachment {
 
   created_at DateTime @default(now())
 
-  content_item ContentItem @relation(fields: [content_item_id], references: [content_item_id], onDelete: Cascade)
-  uploaded_by  User?       @relation("UploadedReferences", fields: [uploaded_by_id], references: [user_id], onDelete: SetNull)
+  content_item ContentItem       @relation(fields: [content_item_id], references: [content_item_id], onDelete: Cascade)
+  uploaded_by  User?             @relation("UploadedReferences", fields: [uploaded_by_id], references: [user_id], onDelete: SetNull)
+  turn         ConversationTurn? @relation(fields: [turn_id], references: [turn_id], onDelete: SetNull)
 
   @@index([content_item_id])
+  @@index([turn_id])
 }
 
 // ---------------------------------------------------------------------------
@@ -558,8 +588,10 @@ model Flag {
 
   created_at DateTime @default(now())
 
-  campaign      Campaign? @relation(fields: [campaign_id], references: [campaign_id], onDelete: Cascade)
-  raised_against User?    @relation("FlagsRaisedAgainst", fields: [raised_against_id], references: [user_id], onDelete: SetNull)
+  campaign       Campaign? @relation(fields: [campaign_id], references: [campaign_id], onDelete: Cascade)
+  raised_against User?     @relation("FlagsRaisedAgainst", fields: [raised_against_id], references: [user_id], onDelete: SetNull)
+
+  turns ConversationTurn[]
 
   @@index([campaign_id])
   @@index([content_item_id])
@@ -569,13 +601,99 @@ model Flag {
   @@index([resolved, severity])
 }
 
+// ---------------------------------------------------------------------------
+// Conversations (Phase 14)
+// ---------------------------------------------------------------------------
+
+/// An ongoing exchange between one staff member and the engine, about one
+/// client.
+///
+/// The client scope is the whole design. Retrieval, grounding and access control
+/// all read `client_id`, so a conversation is *about* one client and cannot
+/// drift to another -- which is what keeps the cross-client isolation guarantee
+/// true on this path as well as the brief path.
+///
+/// This is not a second route to production. When a thread has said enough to
+/// work from, a real `Campaign` row is created and everything it produces hangs
+/// off that campaign exactly as a submitted brief's items do. Downstream -- the
+/// review queues, the gate, analytics -- nothing can tell the two apart.
+model Conversation {
+  conversation_id String @id @default(cuid())
+
+  /// The scope. Never nullable: a conversation with no client has no rules to
+  /// ground in, and grounding is not optional.
+  client_id String
+
+  /// The creator or content lead who owns the thread.
+  created_by_id String?
+
+  /// Set once the exchange has enough to produce work. Null while it is still
+  /// being assembled -- a thread that has not yet named an objective is not yet
+  /// a campaign, and writing an empty one would put half-formed rows in the
+  /// account manager's queue.
+  campaign_id String?
+
+  /// Working title, usually taken from the opening turn.
+  title String?
+
+  /// active | archived
+  status String @default("active")
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  client     Client    @relation(fields: [client_id], references: [client_id], onDelete: Cascade)
+  created_by User?     @relation("AuthoredConversations", fields: [created_by_id], references: [user_id], onDelete: SetNull)
+  campaign   Campaign? @relation(fields: [campaign_id], references: [campaign_id], onDelete: SetNull)
+
+  turns ConversationTurn[]
+
+  // The owner's thread list.
+  @@index([created_by_id, status])
+  @@index([client_id])
+  @@index([campaign_id])
+}
+
+/// One message in a thread.
+///
+/// Append-only, for the same reason `AuditLog` is: the Admin's misuse queue
+/// judges conduct across a conversation, and a record someone can revise after
+/// the fact proves nothing. A refused turn is kept, with `flag_id` pointing at
+/// the reason, so the queue shows what was asked and in what context rather than
+/// an isolated excerpt.
+model ConversationTurn {
+  turn_id         String @id @default(cuid())
+  conversation_id String
+
+  /// creator | assistant | system
+  role String
+
+  body String
+
+  /// Set when this turn was refused -- links the Admin's queue row to the turn
+  /// in its thread. SetNull rather than Cascade: resolving and clearing a flag
+  /// must not delete the evidence it was raised over.
+  flag_id String?
+
+  created_at DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversation_id], references: [conversation_id], onDelete: Cascade)
+  flag         Flag?        @relation(fields: [flag_id], references: [flag_id], onDelete: SetNull)
+
+  references ReferenceAttachment[]
+
+  // The transcript read: one thread, in order.
+  @@index([conversation_id, created_at])
+  @@index([flag_id])
+}
+
 /// Append-only. Never updated, never deleted.
 model AuditLog {
-  audit_id    String @id @default(cuid())
+  audit_id    String  @id @default(cuid())
   entity_type String
   entity_id   String
   /// created | edited | scheduled | rescheduled | deleted | approved |
-  /// declined | flag_raised | flag_resolved | published | take_down
+  /// declined | flag_raised | flag_resolved | published | take_down | assigned
   action      String
   /// Free-form JSON context for the action.
   details     String?
@@ -607,7 +725,7 @@ model PlatformConnection {
   platform String @default("instagram")
 
   /// Encrypted at rest -- never stored or logged in plaintext.
-  access_token       String
+  access_token        String
   /// Instagram's own account id, safe to display.
   platform_account_id String?
   token_expires_at    DateTime?
@@ -649,19 +767,19 @@ model MetricSnapshot {
 /// It cannot become a scheduled item without an account manager deliberately
 /// converting it into a real Campaign and the full engine and gate running.
 model PostRequest {
-  post_request_id String @id @default(cuid())
+  post_request_id String  @id @default(cuid())
   client_id       String
   requested_by_id String?
 
   /// The calendar day being asked for.
-  requested_date DateTime
+  requested_date          DateTime
   /// Set for "change/reschedule this existing post".
   related_content_item_id String?
 
   /// new | under_review | converted | declined | withdrawn
   /// Editable/withdrawable by the requesting client while `new`; the account
   /// manager takes it by moving it to `under_review`, which locks it.
-  status String @default("new")
+  status             String  @default("new")
   /// Set once converted into a real brief.
   linked_campaign_id String?
 
@@ -682,7 +800,7 @@ model PostRequest {
 /// or a deliberate edit does. This keeps the gate from being eroded by informal
 /// wording (architecture §11).
 model Comment {
-  comment_id String @id @default(cuid())
+  comment_id      String  @id @default(cuid())
   /// Exactly one of these two is set -- enforced in the domain layer.
   post_request_id String?
   content_item_id String?

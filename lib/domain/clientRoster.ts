@@ -59,6 +59,8 @@ export type RosterEntry = {
   channels: string[];
   account_manager_id: string | null;
   account_manager_name: string | null;
+  /** So a client can actually reach them -- there is no messaging in-product. */
+  account_manager_email: string | null;
   active_brand_guide_id: string | null;
   sensitive_sector: boolean;
   /** Every market this client operates in, ordered by country code. */
@@ -324,7 +326,7 @@ async function nextClientId(db: Db): Promise<string> {
 }
 
 const ROSTER_INCLUDE = {
-  account_manager: { select: { name: true } },
+  account_manager: { select: { name: true, email: true } },
   markets: {
     include: { market: { select: { market_id: true, name: true, country_code: true } } },
   },
@@ -340,7 +342,7 @@ type ClientRow = {
   account_manager_id: string | null;
   active_brand_guide_id: string | null;
   sensitive_sector: boolean;
-  account_manager: { name: string } | null;
+  account_manager: { name: string; email: string } | null;
   markets: { market: { market_id: string; name: string; country_code: string } }[];
 };
 
@@ -354,6 +356,7 @@ function toRosterEntry(row: ClientRow): RosterEntry {
     channels: decodeChannels(row.channels),
     account_manager_id: row.account_manager_id,
     account_manager_name: row.account_manager?.name ?? null,
+    account_manager_email: row.account_manager?.email ?? null,
     active_brand_guide_id: row.active_brand_guide_id,
     sensitive_sector: row.sensitive_sector,
     markets: row.markets

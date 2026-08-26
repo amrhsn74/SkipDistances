@@ -10,7 +10,12 @@ import {
   BrandGuideNotFoundError,
   BrandGuideValidationError,
 } from "../domain/brandGuides";
+import { BulkApprovalValidationError } from "../domain/bulkApproval";
 import { ClientContactError } from "../domain/clientContacts";
+import {
+  ContentEditNotAllowedError,
+  ContentEditValidationError,
+} from "../domain/contentEdit";
 import { SingleClientApproverError } from "../domain/clientContactInvariant";
 import { ClientValidationError } from "../domain/clientRoster";
 import { CommentTargetNotFoundError, CommentValidationError } from "../domain/comments";
@@ -107,6 +112,24 @@ export function errorResponse(error: unknown): NextResponse<ApiError> {
     );
   }
 
+  if (error instanceof ContentEditNotAllowedError) {
+    // 409, as for an approval the status machine refuses: the body was
+    // well-formed and the caller is permitted -- it is the item's current status
+    // that refuses. This is what a creator gets for editing something already
+    // publishing, where the answer is not "fix your request" but "that post is
+    // going live; it needs a take-down, not an edit".
+    return NextResponse.json<ApiError>(
+      {
+        error: {
+          code: error.code,
+          message: error.message,
+          issues: { status: error.status },
+        },
+      },
+      { status: 409 },
+    );
+  }
+
   if (error instanceof PostRequestNotAllowedError) {
     // 409, as for an approval the status machine refuses: the body was
     // well-formed and the caller is permitted -- it is the row's current state
@@ -169,6 +192,8 @@ export function errorResponse(error: unknown): NextResponse<ApiError> {
 
   if (
     error instanceof ApprovalValidationError ||
+    error instanceof BulkApprovalValidationError ||
+    error instanceof ContentEditValidationError ||
     error instanceof PostRequestValidationError ||
     error instanceof ClientValidationError ||
     error instanceof ClientContactError ||

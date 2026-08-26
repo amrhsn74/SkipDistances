@@ -47,6 +47,7 @@ export type NavIcon =
   | "assignments"
   | "approvals"
   | "requests"
+  | "guide"
   | "governance";
 
 /**
@@ -66,6 +67,13 @@ export const ROLE_NAV: Record<EffectiveRole, readonly NavItem[]> = {
     { href: "/AccountManager", label: "Overview", icon: "overview" },
     { href: "/AccountManager/clients", label: "Clients", icon: "clients" },
     { href: "/AccountManager/queue", label: "Briefs", icon: "briefs" },
+    // The account manager is a client's internal reviewer by default, so the
+    // review queue is theirs in the common case -- the content lead's identical
+    // entry below is the per-client override, not the norm.
+    { href: "/AccountManager/review", label: "Review", icon: "review" },
+    // The front door clients come in through. Its own entry rather than a tab
+    // on the briefs queue: a request is not a brief until someone converts it.
+    { href: "/AccountManager/requests", label: "Requests", icon: "requests" },
     { href: "/AccountManager/calendar", label: "Calendar", icon: "calendar" },
   ],
   content_lead: [
@@ -80,6 +88,9 @@ export const ROLE_NAV: Record<EffectiveRole, readonly NavItem[]> = {
     { href: "/Client", label: "Overview", icon: "overview" },
     { href: "/Client/approvals", label: "Approvals", icon: "approvals" },
     { href: "/Client/requests", label: "Requests", icon: "requests" },
+    // The second thing a client approves, and the one with the wider reach: a
+    // guide version changes what every future draft is grounded in.
+    { href: "/Client/brand-guide", label: "Brand guide", icon: "guide" },
   ],
   agency_admin: [
     { href: "/Admin", label: "Overview", icon: "overview" },

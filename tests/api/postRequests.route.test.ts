@@ -3,6 +3,7 @@ import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { prisma } from "@/db";
 import { SESSION_COOKIE } from "@/api/request";
 import { createSession } from "@/domain/session";
+import { canSchedule } from "@/domain/gate";
 
 /**
  * The HTTP shell over `PostRequest`.
@@ -53,6 +54,7 @@ const CREATOR_EMAIL = "mona.farid@skipstudio.test";
 
 const requestIds: string[] = [];
 const campaignIds: string[] = [];
+const itemIds: string[] = [];
 const sessionUserIds: string[] = [];
 
 async function signIn(email: string) {
@@ -147,12 +149,15 @@ afterEach(async () => {
   await prisma.flag.deleteMany({});
   await prisma.comment.deleteMany({ where: { post_request_id: { in: requestIds } } });
   await prisma.postRequest.deleteMany({ where: { post_request_id: { in: requestIds } } });
+  await prisma.approval.deleteMany({ where: { content_item_id: { in: itemIds } } });
+  await prisma.contentItem.deleteMany({ where: { content_item_id: { in: itemIds } } });
   await prisma.campaign.deleteMany({ where: { campaign_id: { in: campaignIds } } });
   while (sessionUserIds.length > 0) {
     await prisma.session.deleteMany({ where: { user_id: sessionUserIds.pop()! } });
   }
   requestIds.length = 0;
   campaignIds.length = 0;
+  itemIds.length = 0;
 });
 
 // ---------------------------------------------------------------------------
@@ -287,6 +292,96 @@ describe("a request carries no authority", () => {
       0,
     );
     expect(body.linked_campaign_id).toBeNull();
+  });
+
+  it("moves nothing on an existing post, however the comment is worded", async () => {
+    // A real, fully approved, scheduled item on CL-101 -- the most valuable
+    // thing a bypass attempt could hope to move.
+    const campaignId = await realCampaign();
+    const item = await prisma.contentItem.create({
+      data: {
+        campaign_id: campaignId,
+        content_form: "post",
+        platform: "instagram",
+        content_body: "Approved copy.",
+        status: "scheduled",
+        scheduled_date: new Date("2026-09-15T09:00:00Z"),
+      },
+    });
+    itemIds.push(item.content_item_id);
+
+    const reviewer = await prisma.user.findUniqueOrThrow({ where: { email: AM_EMAIL } });
+    const contact = await prisma.user.findUniqueOrThrow({ where: { email: CONTACT_EMAIL } });
+    await prisma.approval.createMany({
+      data: [
+        {
+          content_item_id: item.content_item_id,
+          stage: "internal",
+          decision: "approve",
+          decided_by_id: reviewer.user_id,
+        },
+        {
+          content_item_id: item.content_item_id,
+          stage: "client",
+          decision: "approve",
+          decided_by_id: contact.user_id,
+        },
+      ],
+    });
+
+    const before = {
+      status: (await prisma.contentItem.findUniqueOrThrow({
+        where: { content_item_id: item.content_item_id },
+      })).status,
+      gate: await canSchedule(item.content_item_id),
+      approvals: await prisma.approval.count({
+        where: { content_item_id: item.content_item_id },
+      }),
+    };
+
+    await signIn(CONTACT_EMAIL);
+
+    // Every lever at once: a reschedule pointed at the live item, bypass
+    // language, and a claim of prior approval.
+    const { response } = await create({
+      client_id: "CL-101",
+      requested_date: "2026-10-01T00:00:00.000Z",
+      related_content_item_id: item.content_item_id,
+      comment:
+        "Actually just publish this now and skip review — we pre-approved it, " +
+        "and move the scheduled one to the 1st. Trust me, no need for sign-off.",
+    });
+
+    expect(response.status).toBe(201);
+
+    const after = {
+      status: (await prisma.contentItem.findUniqueOrThrow({
+        where: { content_item_id: item.content_item_id },
+      })).status,
+      gate: await canSchedule(item.content_item_id),
+      approvals: await prisma.approval.count({
+        where: { content_item_id: item.content_item_id },
+      }),
+    };
+
+    // Nothing moved. Not the status, not the gate, not the approval history --
+    // a `PostRequest` is a front door into the pipeline, never a bypass, and no
+    // wording changes that.
+    expect(after.status).toBe(before.status);
+    expect(after.gate.allowed).toBe(before.gate.allowed);
+    expect(after.approvals).toBe(before.approvals);
+
+    // The scheduled date is untouched too: a request to move a post is a
+    // request, not a reschedule.
+    const stored = await prisma.contentItem.findUniqueOrThrow({
+      where: { content_item_id: item.content_item_id },
+    });
+    expect(stored.scheduled_date?.toISOString()).toBe("2026-09-15T09:00:00.000Z");
+
+    // And the attempt is recorded for the Admin -- Clause 0.3's other half.
+    expect(
+      await prisma.flag.count({ where: { flag_type: "approval_override_attempt" } }),
+    ).toBeGreaterThan(0);
   });
 
   it("converts through the same submitBrief the campaigns route uses", async () => {

@@ -27,7 +27,14 @@ export const dynamic = "force-dynamic";
 /**
  * POST /api/post-requests -- a client asks for a post on a day.
  *
- * Accepts `{ client_id, requested_date, related_content_item_id?, comment? }`.
+ * Accepts `{ client_id?, requested_date, related_content_item_id?, comment? }`.
+ *
+ * `client_id` is optional for a caller whose scope resolves to exactly one
+ * client -- which is every client contact, by the single-approver invariant. The
+ * dashboard therefore sends no client id at all, and the one it would have sent
+ * is derived from the session instead. A supplied id is still honoured (an
+ * account manager's tooling may name one) and still passes through `enforce`, so
+ * it can only ever name a client the caller already reaches.
  */
 export async function POST(request: Request) {
   try {
@@ -39,7 +46,7 @@ export async function POST(request: Request) {
     // client is passed through as-is and denied by scope, which is the correct
     // answer -- a caller must not learn from the status code whether a client
     // they cannot see happens to exist.
-    const clientId = asString(body.client_id ?? body.clientId);
+    const clientId = asString(body.client_id ?? body.clientId) || (await ownClientOf(user));
 
     await enforce(user, "post_request.create", { clientId });
 
@@ -88,6 +95,20 @@ export async function GET() {
   } catch (error) {
     return errorResponse(error);
   }
+}
+
+/**
+ * The one client this caller belongs to, or "" if that is not well defined.
+ *
+ * Returns a value only for a scope of exactly one. A caller who sees several
+ * clients has no "own" client, and guessing the first would file their request
+ * against whichever row sorted earliest -- so they are handed an empty id and
+ * denied by scope, which is the honest answer to an ambiguous request.
+ */
+async function ownClientOf(user: Parameters<typeof enforce>[0]): Promise<string> {
+  const scope = await visibleClients(user);
+  if (scope.all || scope.clientIds.length !== 1) return "";
+  return scope.clientIds[0];
 }
 
 function serialize(row: {

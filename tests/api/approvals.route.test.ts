@@ -222,7 +222,7 @@ describe("who may decide", () => {
 // ---------------------------------------------------------------------------
 
 describe("approve", () => {
-  it("writes an Approval row and moves the item to internal_approved", async () => {
+  it("writes an Approval row and hands the item to the client stage", async () => {
     const item = await createItem();
     await signIn(REVIEWER_EMAIL);
 
@@ -233,7 +233,11 @@ describe("approve", () => {
     const body = await response.json();
 
     expect(response.status).toBe(201);
-    expect(body.status).toBe("internal_approved");
+    // The internal approval *is* the handoff. The status machine makes
+    // `internal_approved -> client_approved` illegal on purpose, so an item left
+    // sitting at `internal_approved` would be one the client could never act on
+    // -- the second stage would be unreachable.
+    expect(body.status).toBe("pending_client_review");
     expect(body.previous_status).toBe("pending_internal_review");
     expect(body.late_revoke).toBe(false);
 
@@ -246,7 +250,28 @@ describe("approve", () => {
     const stored = await prisma.contentItem.findUniqueOrThrow({
       where: { content_item_id: item.content_item_id },
     });
-    expect(stored.status).toBe("internal_approved");
+    expect(stored.status).toBe("pending_client_review");
+  });
+
+  it("lets the client then approve, completing both stages", async () => {
+    const item = await createItem();
+
+    await signIn(REVIEWER_EMAIL);
+    await post(item.content_item_id, { stage: "internal", decision: "approve" });
+
+    await signIn(CONTACT_EMAIL);
+    const response = await post(item.content_item_id, {
+      stage: "client",
+      decision: "approve",
+    });
+    const body = await response.json();
+
+    // The walkthrough the whole phase exists to make possible: one item, two
+    // stages, no manual status nudge in between.
+    expect(response.status).toBe(201);
+    expect(body.status).toBe("client_approved");
+    expect(body.gate.allowed).toBe(true);
+    expect(await canSchedule(item.content_item_id)).toMatchObject({ allowed: true });
   });
 
   it("reports the gate as blocked until both stages are in", async () => {

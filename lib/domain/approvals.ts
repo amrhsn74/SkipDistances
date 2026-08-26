@@ -155,6 +155,22 @@ export async function recordDecision(
       },
     });
 
+    // An internal approval hands the item to the client in the same step.
+    //
+    // Without this an internally-approved item is stranded: the status machine
+    // makes `internal_approved -> client_approved` illegal on purpose -- the two
+    // stages are ordered, and a client cannot approve something that has not
+    // been put in front of them -- so the client's stage would never become
+    // reachable and the second half of the two-stage review could never run.
+    //
+    // It is one movement rather than a separate "send to client" action because
+    // there is no decision in between. The reviewer's approval *is* the handoff;
+    // an extra button would be a second thing to forget, and an item sitting at
+    // `internal_approved` that nobody had pushed onward is indistinguishable, on
+    // any screen, from one the client is simply slow to answer.
+    const status =
+      transition.status === "internal_approved" ? "pending_client_review" : transition.status;
+
     // An item pulled back from `scheduled` loses the slot as well as the status.
     // Leaving `scheduled_date` set would keep it in the scheduler's polling
     // window, where only the gate would stop it -- correct, but relying on the
@@ -162,7 +178,7 @@ export async function recordDecision(
     await tx.contentItem.update({
       where: { content_item_id: contentItemId },
       data: {
-        status: transition.status,
+        status,
         ...(transition.unschedule ? { scheduled_date: null } : {}),
       },
     });
@@ -178,7 +194,7 @@ export async function recordDecision(
           stage,
           decision,
           from_status: previousStatus,
-          to_status: transition.status,
+          to_status: status,
           // The word the Admin's trail needs: this is what separates a routine
           // decline in review from an approval pulled back after the fact.
           late_revoke: isLateRevoke(previousStatus, decision),
@@ -192,7 +208,7 @@ export async function recordDecision(
     return {
       approvalId: approval.approval_id,
       previousStatus,
-      status: transition.status,
+      status,
       unscheduled: transition.unschedule,
       campaignId: item.campaign_id,
     };

@@ -5,6 +5,7 @@ import path from "node:path";
 import { REFERENCE_UPLOADS_DIR } from "../config/paths";
 import { prisma, type Db } from "../db";
 import { writeAudit } from "./auditLog";
+import { ACCEPTED_TYPES } from "./referenceTypes";
 
 /**
  * Reference material a creator supplies when prompting a regeneration.
@@ -22,28 +23,13 @@ import { writeAudit } from "./auditLog";
  */
 
 /**
- * Image, PDF, or doc. No video.
+ * The allowlist lives in `referenceTypes.ts`, which imports nothing.
  *
- * The PRD puts video references out of scope explicitly, so this is a closed
- * allowlist rather than a denylist: an unrecognised type is refused, which means
- * a format nobody considered fails closed instead of reaching the model.
+ * Re-exported here so existing callers keep their import path, but defined there
+ * because the creator's file picker needs the same list in the browser and this
+ * module reaches for `node:fs` -- which does not survive a client bundle.
  */
-const ACCEPTED_TYPES = {
-  "image/jpeg": { fileType: "image", extension: ".jpg" },
-  "image/png": { fileType: "image", extension: ".png" },
-  "image/webp": { fileType: "image", extension: ".webp" },
-  "application/pdf": { fileType: "pdf", extension: ".pdf" },
-  "text/plain": { fileType: "doc", extension: ".txt" },
-  "text/markdown": { fileType: "doc", extension: ".md" },
-  "application/msword": { fileType: "doc", extension: ".doc" },
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
-    fileType: "doc",
-    extension: ".docx",
-  },
-} as const satisfies Record<string, { fileType: "image" | "pdf" | "doc"; extension: string }>;
-
-/** What the UI's file picker should offer, so client and server agree. */
-export const ACCEPTED_MIME_TYPES = Object.keys(ACCEPTED_TYPES);
+export { ACCEPTED_MIME_TYPES } from "./referenceTypes";
 
 export class ReferenceValidationError extends Error {
   readonly code = "REFERENCE_VALIDATION";

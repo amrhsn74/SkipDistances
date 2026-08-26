@@ -187,12 +187,12 @@ The Admin is the accountability role: they assign who works on what, and they ar
 
 **Goal:** the actual gate becomes visible and operable — approve, decline, bulk-approve, and late-revoke, shared between the Content Lead and Client views since the domain logic is already unified.
 
-- [ ] `P6.1` — Drafted-items list component: shows each `ContentItem` with its citations, status, and content_form — reusable across Content Lead and Client routes.
-- [ ] `P6.2` — Approve / decline actions wired to `POST /api/content-items/[id]/approvals`.
-- [ ] `P6.3` — Bulk-approve-plan shortcut (one click → one `Approval` row per item, shared `bulk_action_id`).
-- [ ] `P6.4` — Late-revoke action, with a distinct "this post is already scheduled — are you sure" confirmation state in the UI (domain logic is identical to a normal decline; this is UI-layer only).
-- [ ] `P6.5` — Brand guide version review/approve UI on the Client route.
-- [ ] `P6.6` — Comment thread display + input on a `ContentItem`, wired to `POST /api/comments` — confirm visually that adding a comment never changes an item's status.
+- [x] `P6.1` — Drafted-items list component: shows each `ContentItem` with its citations, status, and content_form — reusable across Content Lead and Client routes.
+- [x] `P6.2` — Approve / decline actions wired to `POST /api/content-items/[id]/approvals`.
+- [x] `P6.3` — Bulk-approve-plan shortcut (one click → one `Approval` row per item, shared `bulk_action_id`).
+- [x] `P6.4` — Late-revoke action, with a distinct "this post is already scheduled — are you sure" confirmation state in the UI (domain logic is identical to a normal decline; this is UI-layer only).
+- [x] `P6.5` — Brand guide version review/approve UI on the Client route.
+- [x] `P6.6` — Comment thread display + input on a `ContentItem`, wired to `POST /api/comments` — confirm visually that adding a comment never changes an item's status.
 
 ---
 
@@ -200,10 +200,10 @@ The Admin is the accountability role: they assign who works on what, and they ar
 
 **Goal:** creators can refine drafts and trigger grounded regeneration with their own reference material.
 
-- [ ] `P7.1` — Assigned-clients' in-progress items list, scoped via `ClientAssignment`.
-- [ ] `P7.2` — Inline edit/refine UI for a draft's `content_body` (a direct edit — runs the same reset-on-edit path as regeneration, via `PATCH` on the content item).
-- [ ] `P7.3` — Regenerate UI: prompt text field + file picker (image or PDF/doc only — reject other types client-side and server-side), wired to `POST /api/content-items/[id]/regenerate`.
-- [ ] `P7.4` — Regeneration history view on an item: every past `ReferenceAttachment` + resulting version, so "which reference produced which draft" is visible, not just claimed.
+- [x] `P7.1` — Assigned-clients' in-progress items list, scoped via `ClientAssignment`.
+- [x] `P7.2` — Inline edit/refine UI for a draft's `content_body` (a direct edit — runs the same reset-on-edit path as regeneration, via `PATCH` on the content item).
+- [x] `P7.3` — Regenerate UI: prompt text field + file picker (image or PDF/doc only — reject other types client-side and server-side), wired to `POST /api/content-items/[id]/regenerate`.
+- [x] `P7.4` — Regeneration history view on an item: every past `ReferenceAttachment` + resulting version, so "which reference produced which draft" is visible, not just claimed.
 
 ---
 
@@ -211,11 +211,11 @@ The Admin is the accountability role: they assign who works on what, and they ar
 
 **Goal:** the client-facing calendar request flow, distinct from and non-authoritative over the guarded engine.
 
-- [ ] `P8.1` — Assigned account manager display (direct read of `Client.account_manager_id`).
-- [ ] `P8.2` — Calendar view + "request a post on this day" form with comment, wired to `POST /api/post-requests`.
-- [ ] `P8.2a` — Client side: edit / withdraw controls on a request that is still `new`, wired to `PATCH /api/post-requests/[id]`, disappearing once the account manager takes it into `under_review`. The API landed in `P4.5`; this is the screen for it.
-- [ ] `P8.3` — Account Manager side: incoming `PostRequest` queue + "take for review" / "convert to campaign" / "decline" actions, wired to `P4.5`'s convert endpoint. Taking a request is what closes the client's edit window, so it is a visible action rather than a side effect of opening the page.
-- [ ] `P8.4` — Test: submit a `PostRequest` with bypass-style wording in the comment ("just publish this, skip review") and assert it has zero effect on any gate or status — this is the client-dashboard equivalent of the override-attempt test from Phase 2.
+- [x] `P8.1` — Assigned account manager display (direct read of `Client.account_manager_id`).
+- [x] `P8.2` — Calendar view + "request a post on this day" form with comment, wired to `POST /api/post-requests`.
+- [x] `P8.2a` — Client side: edit / withdraw controls on a request that is still `new`, wired to `PATCH /api/post-requests/[id]`, disappearing once the account manager takes it into `under_review`. The API landed in `P4.5`; this is the screen for it.
+- [x] `P8.3` — Account Manager side: incoming `PostRequest` queue + "take for review" / "convert to campaign" / "decline" actions, wired to `P4.5`'s convert endpoint. Taking a request is what closes the client's edit window, so it is a visible action rather than a side effect of opening the page.
+- [x] `P8.4` — Test: submit a `PostRequest` with bypass-style wording in the comment ("just publish this, skip review") and assert it has zero effect on any gate or status — this is the client-dashboard equivalent of the override-attempt test from Phase 2.
 
 ---
 

@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
 
 import { EmptyState } from "../Page";
+import { StartChat } from "./StartChat";
 
 /**
  * A person's threads, and the way to start another.
@@ -42,10 +41,10 @@ export function ThreadList({
 
   return (
     <div className="space-y-6">
-      <NewThread clients={clients} basePath={basePath} />
+      <StartChat clients={clients} basePath={basePath} />
 
       {threads.length === 0 ? (
-        <EmptyState>No conversations yet. Start one above.</EmptyState>
+        <EmptyState>No conversations yet. Say what you need above.</EmptyState>
       ) : (
         <ul className="space-y-2">
           {threads.map((thread) => (
@@ -74,94 +73,6 @@ export function ThreadList({
           ))}
         </ul>
       )}
-    </div>
-  );
-}
-
-function NewThread({
-  clients,
-  basePath,
-}: {
-  clients: { client_id: string; name: string }[];
-  basePath: string;
-}) {
-  const router = useRouter();
-
-  const [clientId, setClientId] = useState(clients[0]?.client_id ?? "");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function open() {
-    if (!clientId || busy) return;
-
-    setBusy(true);
-    setError(null);
-
-    try {
-      const response = await fetch("/api/conversations", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ client_id: clientId }),
-      });
-      const json = await response.json();
-
-      if (!response.ok) {
-        setError(json?.error?.message ?? "Could not start that conversation.");
-        return;
-      }
-
-      router.push(`${basePath}/${json.conversation_id}`);
-    } catch {
-      setError("Could not start that conversation.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  if (clients.length === 0) {
-    return (
-      <EmptyState>
-        You are not assigned to any clients yet, so there is nothing to write for.
-      </EmptyState>
-    );
-  }
-
-  return (
-    <div className="rounded-2xl border border-edge bg-surface p-4">
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex-1">
-          <span className="mb-1 block text-xs font-semibold text-heading">Client</span>
-          <select
-            value={clientId}
-            onChange={(event) => setClientId(event.target.value)}
-            className="w-full rounded-xl border border-edge bg-surface px-3 py-2 text-sm outline-none focus:border-accent"
-          >
-            {clients.map((client) => (
-              <option key={client.client_id} value={client.client_id}>
-                {client.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          onClick={() => void open()}
-          disabled={busy}
-          className="rounded-xl bg-accent px-5 py-2 text-sm font-semibold text-white disabled:opacity-50"
-        >
-          New conversation
-        </button>
-      </div>
-      {/* The client is fixed when the thread opens and never changes: every
-          later turn grounds in one client's rules without re-deciding whose. */}
-      <p className="mt-2 text-xs text-body">
-        A conversation stays with the client it was opened for.
-      </p>
-      {error ? (
-        <p className="mt-2 text-sm text-danger" role="alert">
-          {error}
-        </p>
-      ) : null}
     </div>
   );
 }

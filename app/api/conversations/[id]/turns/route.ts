@@ -42,7 +42,13 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const body = (await request.json()) as Record<string, unknown>;
     const prompt = typeof body.prompt === "string" ? body.prompt : "";
 
-    const result = await chatTurn(user, params.id, prompt);
+    // Which proposed items to draft. Absent on an ordinary message, which is
+    // what makes a complete thread propose rather than draft.
+    const selection = Array.isArray(body.selection)
+      ? body.selection.filter((index): index is number => typeof index === "number")
+      : undefined;
+
+    const result = await chatTurn(user, params.id, prompt, undefined, undefined, selection);
 
     if (result.status === "refused") {
       return NextResponse.json({
@@ -61,6 +67,17 @@ export async function POST(request: Request, { params }: { params: { id: string 
         // What the thread still needs, so a screen can show progress rather than
         // an unexplained series of questions.
         missing: result.accumulated.missing,
+        fields: result.accumulated.fields,
+      });
+    }
+
+    if (result.status === "proposed") {
+      // 200 with a list and nothing written. The creator picks from `items` and
+      // sends the indices back; only then does anything get drafted.
+      return NextResponse.json({
+        status: result.status,
+        assistant_message: result.assistantMessage,
+        items: result.items,
         fields: result.accumulated.fields,
       });
     }

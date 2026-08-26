@@ -1,5 +1,6 @@
 import { prisma, type Db } from "../db";
 import { writeAudit } from "../domain/auditLog";
+import type { Selection } from "../domain/planSelection";
 import {
   haltClause,
   isHalted,
@@ -58,6 +59,14 @@ export type SubmitBriefInput = {
   title?: string | null;
   /** Set only when the account manager built the brief around a known occasion. */
   relatedOccasionId?: string | null;
+  /**
+   * Which proposed items to draft, by index into the generated plan.
+   *
+   * Omitted on the account manager's path, which submits a brief and expects the
+   * whole campaign back. The chat path proposes a plan to the creator first and
+   * passes exactly what they ticked, so nothing is drafted that nobody chose.
+   */
+  selection?: Selection;
 };
 
 /** One of the PRD's four intake outcomes. */
@@ -163,7 +172,7 @@ export async function submitBrief(
     db,
   );
 
-  const run = await runIntake(campaign.campaign_id, db, dependencies);
+  const run = await runIntake(campaign.campaign_id, db, dependencies, input.selection);
 
   // Re-read rather than returning the pre-run row: `runIntake` writes the
   // extracted title, the override flag and the status back to it, and

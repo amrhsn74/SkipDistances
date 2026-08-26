@@ -5,6 +5,7 @@ import {
   resolveClient,
 } from "../domain/clientResolution";
 import { checkBriefComplete } from "../domain/completeness";
+import { selectItems, type Selection } from "../domain/planSelection";
 import { type Outcome, isOk } from "../domain/decision";
 import {
   type OverrideDetection,
@@ -225,11 +226,19 @@ export async function runIntakeSteps(
   };
 }
 
-/** Run the persisted campaign through the complete guarded intake pipeline. */
+/**
+ * Run the persisted campaign through the complete guarded intake pipeline.
+ *
+ * `selection` narrows the generated plan to the items a creator chose. Omit it
+ * and the whole plan is drafted, which is the account manager's path: they
+ * submit a brief and expect a campaign back. The chat path proposes first and
+ * passes what was ticked. See `lib/domain/planSelection.ts`.
+ */
 export async function runIntake(
   campaignId: string,
   db: Db = prisma,
   dependencies: IntakeDependencies = defaultDependencies,
+  selection?: Selection,
 ): Promise<IntakeRunResult> {
   const campaign = await db.campaign.findUnique({
     where: { campaign_id: campaignId },
@@ -281,7 +290,7 @@ export async function runIntake(
     db,
   );
   const guidelines = await searchGuidelines(intake.client.client_id, db);
-  const plan = await dependencies.generate(
+  const proposed = await dependencies.generate(
     {
       client: intake.client,
       analysis,
@@ -290,6 +299,21 @@ export async function runIntake(
     },
     db,
   );
+
+  // The creator's choice, applied before anything is judged or written.
+  //
+  // Narrowing here rather than after `queueOrFlag` is what makes "draft only
+  // what was chosen" true rather than cosmetic: an unchosen item is never
+  // judged, never persisted and never illustrated, so it costs no compliance
+  // call and no image call and leaves no row for someone to find later.
+  //
+  // No selection means the whole proposal, which is what the account manager's
+  // path has always done -- they submit a brief and expect a campaign back.
+  // Only the chat path proposes first and asks, and it always passes indices.
+  const plan: GeneratedPlan = selection
+    ? { ...proposed, items: selectItems(proposed.items, selection) }
+    : proposed;
+
   const compliance = await complianceCheck(
     { plan, guidelines, briefContext: campaign.raw_brief_text, analysis },
     dependencies.judge,

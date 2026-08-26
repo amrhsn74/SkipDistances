@@ -185,6 +185,14 @@ export async function appendTurn(
   role: TurnRole,
   body: string,
   db: Db = prisma,
+  /**
+   * The plan this turn proposed, when it proposed one.
+   *
+   * Stored as JSON on the turn so the offer stays readable exactly as it was
+   * made: the indices a creator ticks mean nothing without the list they were
+   * ticking against. See the field's comment in `schema.prisma`.
+   */
+  proposal?: unknown,
 ) {
   const conversation = await db.conversation.findUnique({
     where: { conversation_id: conversationId },
@@ -200,7 +208,12 @@ export async function appendTurn(
   await enforce(user, "content.chat", { clientId: conversation.client_id }, db);
 
   const turn = await db.conversationTurn.create({
-    data: { conversation_id: conversationId, role, body },
+    data: {
+      conversation_id: conversationId,
+      role,
+      body,
+      proposal: proposal === undefined ? null : JSON.stringify(proposal),
+    },
     select: { turn_id: true, role: true, body: true, created_at: true },
   });
 

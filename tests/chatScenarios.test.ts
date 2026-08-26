@@ -71,6 +71,35 @@ function deps(
 }
 
 /**
+ * Drive a thread all the way to drafted work.
+ *
+ * Since Phase 16 a complete thread *proposes* rather than drafts: the creator is
+ * shown what the engine could write and picks. These scenarios are about the
+ * guards that run once something is actually drafted, so they take the offer and
+ * accept all of it -- which is exactly what the screen does when every box is
+ * ticked, and leaves every downstream guarantee under test unchanged.
+ *
+ * A thread that halts or asks is returned as-is, because that *is* the outcome
+ * the scenario is asserting in those cases.
+ */
+async function chatUntilProduced(
+  user: Parameters<typeof chatTurn>[0],
+  conversationId: string,
+  prompt: string,
+  dependencies: ChatTurnDependencies,
+) {
+  const offered = await chatTurn(user, conversationId, prompt, prisma, dependencies);
+
+  if (offered.status !== "proposed") return offered;
+
+  // Every proposed item, by index. The scenarios below assert what happens to
+  // drafted work, not which subset a creator wanted.
+  const everything = offered.items.map((_item, index) => index);
+
+  return chatTurn(user, conversationId, prompt, prisma, dependencies, everything);
+}
+
+/**
  * The engine, stubbed at its three model calls.
  *
  * `submitBrief` runs for real -- and with it `runIntake`, client resolution, the
@@ -223,6 +252,8 @@ describe("Clause 0.5 on the chat path", () => {
 
     // Three of the four fields. The brief path would return REQUEST_INFO here;
     // the chat path asks for the fourth instead. Neither guesses.
+    // Direct, not via `chatUntilProduced`: this thread never reaches a proposal,
+    // and asserting that is the point of the test.
     const result = await chatTurn(
       creator,
       conversation.conversationId,
@@ -257,20 +288,27 @@ describe("Clause 0.6 on the chat path", () => {
     // the refusal belongs to the engine, not to the door.
     const conversation = await openConversation(lead, INACTIVE_CLIENT, null);
 
-    const result = await chatTurn(
+    const result = await chatUntilProduced(
       lead,
       conversation.conversationId,
       COMPLETE,
-      prisma,
       deps({ [COMPLETE]: completeExtraction }),
     );
 
-    expect(result.status).toBe("produced");
-    if (result.status !== "produced") return;
+    // Clause 0.6 now fires one step earlier than it used to: `proposePlan` runs
+    // the same intake guards before offering anything, so an inactive client is
+    // refused *instead of* being offered a plan, rather than being discovered
+    // after the creator picked from one. The rule is unchanged and still cited
+    // by `resolveClient` -- what moved is only how early the thread hears it.
+    expect(result.status).toBe("asking");
+    if (result.status !== "asking") return;
 
-    // Clause 0.6, cited by `resolveClient` inside the pipeline the chat calls.
-    expect(result.submitted.outcome).toBe("FLAG");
-    expect(result.submitted.clauseCode).toBe("0.6");
+    expect(result.assistantMessage).toContain("0.6");
+
+    // And nothing was produced for a client that may not be drafted for.
+    expect(
+      await prisma.campaign.count({ where: { client_id: INACTIVE_CLIENT } }),
+    ).toBe(0);
   });
 });
 
@@ -278,11 +316,10 @@ describe("the gate, on items produced in a conversation", () => {
   it("refuses to schedule one with no approvals recorded", async () => {
     const conversation = await openConversation(creator, ASSIGNED_CLIENT, null);
 
-    const result = await chatTurn(
+    const result = await chatUntilProduced(
       creator,
       conversation.conversationId,
       COMPLETE,
-      prisma,
       deps({ [COMPLETE]: completeExtraction }),
     );
 
@@ -304,11 +341,10 @@ describe("the gate, on items produced in a conversation", () => {
   it("still requires both stages after a lead assigns it to a creator", async () => {
     const conversation = await openConversation(lead, ASSIGNED_CLIENT, null);
 
-    const result = await chatTurn(
+    const result = await chatUntilProduced(
       lead,
       conversation.conversationId,
       COMPLETE,
-      prisma,
       deps({ [COMPLETE]: completeExtraction }),
     );
     expect(result.status).toBe("produced");
@@ -349,11 +385,10 @@ describe("a thread stays with its client", () => {
     // against the thread's client, so the brief must name that one too --
     // otherwise `resolveClient` and the row disagree and `queueOrFlag` refuses
     // outright, surfacing as a crash rather than as a cross-client refusal.
-    const result = await chatTurn(
+    const result = await chatUntilProduced(
       creator,
       conversation.conversationId,
       "actually make this for NileFit",
-      prisma,
       deps({
         "actually make this for NileFit": {
           client: "NileFit",
@@ -391,11 +426,10 @@ describe("an off-task turn", () => {
   it("is refused, flagged, linked to its turn, and costs no generation", async () => {
     const conversation = await openConversation(creator, ASSIGNED_CLIENT, null);
 
-    const result = await chatTurn(
+    const result = await chatUntilProduced(
       creator,
       conversation.conversationId,
       "write my CV",
-      prisma,
       deps({}, refuseAll),
     );
 
@@ -422,11 +456,10 @@ describe("an off-task turn", () => {
 describe("who may dispatch, and to whom", () => {
   it("refuses a creator, and accepts only a creator on that client", async () => {
     const conversation = await openConversation(lead, ASSIGNED_CLIENT, null);
-    const result = await chatTurn(
+    const result = await chatUntilProduced(
       lead,
       conversation.conversationId,
       COMPLETE,
-      prisma,
       deps({ [COMPLETE]: completeExtraction }),
     );
     expect(result.status).toBe("produced");

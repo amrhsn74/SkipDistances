@@ -91,6 +91,9 @@ export const ROLE_NAV: Record<EffectiveRole, readonly NavItem[]> = {
     // First, not last: since Phase 14 this is where a creator's work starts.
     { href: "/Creator/chat", label: "Chat", icon: "chat" },
     { href: "/Creator/assignments", label: "Assignments", icon: "assignments" },
+    // The rules, readable before the writing. A creator was previously shown
+    // clauses only as citations on work already produced.
+    { href: "/Creator/guidelines", label: "Guidelines", icon: "guide" },
   ],
   client_contact: [
     { href: "/Client", label: "Overview", icon: "overview" },

@@ -4,6 +4,7 @@ import { prisma } from "../db";
 import { openConversation } from "../domain/conversations";
 import type { TurnExtraction } from "../domain/briefAccumulation";
 import { chatTurn, type ChatTurnDependencies } from "./chatTurn";
+import type { ProposeResult } from "./proposePlan";
 import type { OnTaskJudge } from "./onTaskCheck";
 
 /**
@@ -147,6 +148,154 @@ describe("an incomplete thread", () => {
       orderBy: { created_at: "asc" },
     });
     expect(turns.map((t) => t.role)).toEqual(["creator", "assistant"]);
+  });
+});
+
+describe("a complete thread", () => {
+  /** A thread that has stated all four Clause 0.5 fields in one turn. */
+  const COMPLETE = {
+    "launch the cold brew on instagram for gym beginners": {
+      client: "NileFit",
+      objective: "launch the cold brew",
+      audience: "gym beginners",
+      channels: "instagram",
+    },
+  };
+
+  const PROPOSAL: ProposeResult = {
+    status: "proposed",
+    notes: null,
+    items: [
+      {
+        title: "Launch post",
+        content_form: "post",
+        platform: "instagram",
+        summary: "Announce the cold brew.",
+        clause_codes: ["NF.1"],
+      },
+      {
+        title: "Launch reel",
+        content_form: "reel",
+        platform: "instagram",
+        summary: "Show the pour.",
+        clause_codes: ["NF.3"],
+      },
+    ],
+  };
+
+  it("offers a plan instead of drafting one, and writes no content", async () => {
+    const conversation = await openConversation(creator, CLIENT, null);
+
+    const result = await chatTurn(
+      creator,
+      conversation.conversationId,
+      "launch the cold brew on instagram for gym beginners",
+      prisma,
+      {
+        extract: extractorFor(COMPLETE),
+        onTaskJudge: allowAll,
+        propose: async () => PROPOSAL,
+        // Reaching this at all would mean the thread drafted without being asked.
+        submit: async () => {
+          throw new Error("submitBrief must not run before the creator has chosen");
+        },
+      },
+    );
+
+    expect(result.status).toBe("proposed");
+    if (result.status !== "proposed") return;
+    expect(result.items).toHaveLength(2);
+
+    // The whole point: a complete thread now costs one plan call and writes
+    // nothing. No campaign, no items, nothing in anyone's queue.
+    expect(await prisma.campaign.count({ where: { submitted_by_id: CREATOR } })).toBe(0);
+
+    const reloaded = await prisma.conversation.findUniqueOrThrow({
+      where: { conversation_id: conversation.conversationId },
+    });
+    expect(reloaded.campaign_id).toBeNull();
+  });
+
+  it("stores the offer on the turn that made it", async () => {
+    const conversation = await openConversation(creator, CLIENT, null);
+
+    await chatTurn(
+      creator,
+      conversation.conversationId,
+      "launch the cold brew on instagram for gym beginners",
+      prisma,
+      {
+        extract: extractorFor(COMPLETE),
+        onTaskJudge: allowAll,
+        propose: async () => PROPOSAL,
+      },
+    );
+
+    // The indices the creator sends back mean nothing without the list they
+    // were ticking against, so the list is kept.
+    const turn = await prisma.conversationTurn.findFirstOrThrow({
+      where: { conversation_id: conversation.conversationId, role: "assistant" },
+      orderBy: { created_at: "desc" },
+    });
+    const stored = JSON.parse(turn.proposal ?? "null");
+    expect(stored.items).toHaveLength(2);
+    expect(stored.items[0].title).toBe("Launch post");
+  });
+
+  it("drafts only what the creator chose", async () => {
+    const conversation = await openConversation(creator, CLIENT, null);
+
+    let received: number[] | undefined;
+
+    // A real row: `linkCampaign` points the thread at it through a foreign key,
+    // so a made-up id would fail on the constraint rather than on the assertion.
+    const campaign = await prisma.campaign.create({
+      data: {
+        client_id: CLIENT,
+        title: "Chosen items",
+        raw_brief_text: "brief",
+        submitted_by_id: CREATOR,
+        status: "drafted",
+      },
+      select: { campaign_id: true },
+    });
+
+    await chatTurn(
+      creator,
+      conversation.conversationId,
+      "launch the cold brew on instagram for gym beginners",
+      prisma,
+      {
+        extract: extractorFor(COMPLETE),
+        onTaskJudge: allowAll,
+        propose: async () => PROPOSAL,
+        submit: (async (input: { selection?: number[] }) => {
+          received = input.selection;
+          // Enough of a result for `describe` to render.
+          return {
+            campaign: {
+              campaign_id: campaign.campaign_id,
+              client_id: CLIENT,
+              title: "t",
+              status: "drafted",
+              override_attempt_detected: false,
+              compliance_review_required: false,
+            },
+            outcome: "DRAFT",
+            clauseCode: null,
+            reason: null,
+            counts: { drafted: 1, flagged: 0, requestInfo: 0 },
+            run: {} as never,
+          };
+        }) as unknown as ChatTurnDependencies["submit"],
+      },
+      // The creator ticked the second item only.
+      [1],
+    );
+
+    // Not [0, 1]. The unchosen item is never judged, never persisted, and never
+    // illustrated -- the narrowing happens before compliance runs.
+    expect(received).toEqual([1]);
   });
 });
 

@@ -675,6 +675,20 @@ model ConversationTurn {
   /// must not delete the evidence it was raised over.
   flag_id String?
 
+  /// The plan this turn proposed, as JSON, when it proposed one.
+  ///
+  /// Held on the turn rather than the conversation because a thread may propose
+  /// more than once -- a creator who drafts two of three items and then asks for
+  /// something else gets a second proposal, and the first must stay readable
+  /// exactly as it was offered. It is also what makes the creator's choice
+  /// checkable after the fact: the indices they ticked mean nothing without the
+  /// list they were ticking against.
+  ///
+  /// Never a source of truth for content. The chosen items are re-generated and
+  /// re-judged by the engine when the creator picks; this is the offer, not the
+  /// draft.
+  proposal String?
+
   created_at DateTime @default(now())
 
   conversation Conversation @relation(fields: [conversation_id], references: [conversation_id], onDelete: Cascade)

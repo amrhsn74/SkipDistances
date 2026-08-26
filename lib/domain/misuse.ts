@@ -362,10 +362,23 @@ export async function flagApprovalChurn(
 const SEVERITY_RANK: Record<Severity, number> = { high: 0, medium: 1, low: 2 };
 
 /**
- * Open governance flags, worst first.
+ * Open flags the Admin should read, worst first.
  *
- * Content flags are excluded on purpose: they go to the account manager handling
- * that brief, not to the Admin. Mixing them would bury conduct in routine work.
+ * Two kinds qualify, and the second is the subtle one:
+ *
+ *   1. **Every governance flag.** Misuse is always the Admin's, and always
+ *      recorded the moment it happens -- the act is the evidence.
+ *   2. **A content flag someone submitted anyway.** The engine declining to
+ *      draft something raises nothing at all now (see `queueOrFlag`), because a
+ *      refusal a creator reads and abandons is not evidence. But a creator who
+ *      submits the flagged item *past* that refusal has done something the Admin
+ *      should see, and `submitForReview` raises the row then.
+ *
+ * `raised_against_id` is what tells the two apart, and it is not an incidental
+ * field to key on: a content flag names nobody by construction, so a content
+ * flag that *does* name someone can only have come from a person submitting one.
+ * Routine engine refusals stay out of this queue because they no longer exist as
+ * rows at all.
  */
 export async function openGovernanceFlags(
   options: { includeResolved?: boolean } = {},
@@ -373,7 +386,14 @@ export async function openGovernanceFlags(
 ) {
   const rows = await db.flag.findMany({
     where: {
-      flag_type: { in: [...GOVERNANCE_FLAG_TYPES] },
+      OR: [
+        { flag_type: { in: [...GOVERNANCE_FLAG_TYPES] } },
+        // A content violation someone stood behind. See above.
+        {
+          flag_type: { in: [...CONTENT_FLAG_TYPES] },
+          raised_against_id: { not: null },
+        },
+      ],
       ...(options.includeResolved ? {} : { resolved: false }),
     },
     include: {

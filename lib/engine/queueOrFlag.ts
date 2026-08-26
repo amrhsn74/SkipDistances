@@ -1,7 +1,6 @@
 import { prisma, type Db } from "../db";
 import { writeAudit } from "../domain/auditLog";
 import { isOk, type Outcome, type RequestInfo } from "../domain/decision";
-import { raiseFlag } from "../domain/misuse";
 import { requiresComplianceReview } from "../domain/sensitiveSector";
 import type { GeneratedPlanItem } from "./generatePlan";
 import type { ItemComplianceResult } from "./complianceCheck";
@@ -33,9 +32,18 @@ export type PersistedDraft = {
   citationClauseIds: string[];
 };
 
+/**
+ * An item the engine declined to draft.
+ *
+ * Carries no `flagId`: a content violation does not raise a governance row at
+ * drafting time. See the comment at the push site below -- the row is raised on
+ * submission, if the creator stands behind the item.
+ */
 export type PersistedFlag = PersistedDraft & {
-  flagId: string;
   clauseId: string;
+  clauseCode: string;
+  flagType: string;
+  reason: string | null;
 };
 
 export type HeldRequestInfo = {
@@ -200,26 +208,30 @@ async function persistQueueOrFlag(
       throw new QueueOrFlagError("Flagged item has no resolved flagged clause.");
     }
 
-    const createdFlag = await raiseFlag(
-      {
-        flagType: flaggedOutcome.flagType,
-        campaignId: input.campaignId,
-        contentItemId: contentItem.content_item_id,
-        clauseId: flaggedClauseId,
-        details: {
-          clause_code: flaggedOutcome.clauseCode,
-          reason: flaggedOutcome.reason,
-          source: result.source,
-          item_title: result.item.title,
-        },
-      },
-      db,
-    );
-
+    // No `Flag` row here, deliberately.
+    //
+    // A guideline violation caught at drafting is the engine doing its job: it
+    // declined to write something, and the person who asked is told why. Raising
+    // a governance row for it filled the Admin's evidence table with work nobody
+    // had stood behind -- a creator exploring an idea, seeing the refusal, and
+    // moving on would leave a permanent flag against a draft that never went
+    // anywhere.
+    //
+    // Nothing is lost. The item is persisted as `flagged` and carries
+    // `flagged_clause_id`, which is what the chat and the creator's queue read
+    // to explain the refusal. The row is raised in `submitForReview` if and when
+    // the creator actually submits the item -- at that point they have stood
+    // behind it, and the Admin has something worth keeping.
+    //
+    // Misuse is the opposite case and is untouched: an override attempt or an
+    // off-task prompt is flagged the moment it happens, because the act is the
+    // evidence and waiting for a submission would lose it.
     flagged.push({
       ...base,
-      flagId: createdFlag.flag_id,
       clauseId: flaggedClauseId,
+      clauseCode: flaggedOutcome.clauseCode,
+      flagType: flaggedOutcome.flagType,
+      reason: flaggedOutcome.reason,
     });
   }
 

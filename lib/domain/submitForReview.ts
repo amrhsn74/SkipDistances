@@ -2,6 +2,7 @@ import { prisma, type Db } from "../db";
 import { ContentItemNotFoundError } from "./approvals";
 import { writeAudit } from "./auditLog";
 import { ContentEditNotAllowedError } from "./contentEdit";
+import { raiseFlag } from "./misuse";
 import { applyTransition, type ContentStatus } from "./statusMachine";
 
 /**
@@ -48,7 +49,16 @@ export async function submitForReview(
   return db.$transaction(async (tx) => {
     const existing = await tx.contentItem.findUnique({
       where: { content_item_id: contentItemId },
-      select: { content_item_id: true, status: true, content_body: true },
+      select: {
+        content_item_id: true,
+        status: true,
+        content_body: true,
+        campaign_id: true,
+        // Submitting a flagged item is the act that makes the violation worth
+        // recording, and the clause is the whole substance of the record.
+        // Read before it is cleared below.
+        flagged_clause_id: true,
+      },
     });
 
     if (!existing) throw new ContentItemNotFoundError(contentItemId);
@@ -92,6 +102,47 @@ export async function submitForReview(
         flagged_clause_id: null,
       },
     });
+
+    // --- The deferred content flag, raised now that someone stands behind it. ---
+    //
+    // `queueOrFlag` deliberately raises nothing when the engine declines to
+    // draft something: a refusal the creator sees and abandons is not evidence
+    // of anything, and recording it would fill the Admin's table with drafts
+    // nobody ever submitted.
+    //
+    // Submitting is the act that changes that. A creator sending a flagged item
+    // to review has read the refusal and asked for it anyway, and *that* is
+    // worth keeping -- so the row is raised here, naming them, with the clause
+    // they submitted past.
+    if (flagResolved && existing.flagged_clause_id) {
+      // `flagged_clause_id` is a bare column, not a relation, so the clause is
+      // looked up rather than included. Which agency the rule belongs to decides
+      // the flag type: an agency clause is a compliance violation, a brand one
+      // is a brand violation.
+      const clause = await tx.guidelineClause.findUnique({
+        where: { clause_id: existing.flagged_clause_id },
+        select: { clause_code: true, title: true, source_type: true },
+      });
+
+      await raiseFlag(
+        {
+          flagType:
+            clause?.source_type === "agency" ? "compliance_violation" : "brand_violation",
+          raisedAgainstId: submittedById,
+          campaignId: existing.campaign_id,
+          contentItemId,
+          clauseId: existing.flagged_clause_id,
+          details: {
+            clause_code: clause?.clause_code ?? null,
+            clause_title: clause?.title ?? null,
+            // The distinction that makes the row actionable: this was not the
+            // engine flagging a draft, it was a person submitting one anyway.
+            submitted_despite_flag: true,
+          },
+        },
+        tx,
+      );
+    }
 
     await writeAudit(
       {

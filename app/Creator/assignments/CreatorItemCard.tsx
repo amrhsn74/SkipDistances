@@ -2,6 +2,7 @@
 
 import { Badge, type BadgeTone } from "../../components/Page";
 import type { CreatorItemSerialized } from "@/domain/creatorQueue";
+import { flagMessage } from "@/domain/flagMessages";
 
 /**
  * One item on a creator's desk.
@@ -72,11 +73,31 @@ export function CreatorItemCard({
 
       {item.flagged_clause ? (
         <div className="mt-4 rounded-xl border border-flag/30 bg-flag-bg px-4 py-3">
+          {/* The plain-language explanation first, the rule's own text second.
+              A creator's next question is "what do I change", and a clause code
+              answers it with a lookup task. Same sentence the chat gave them and
+              the Admin would read -- see `lib/domain/flagMessages.ts`. */}
           <p className="text-sm font-semibold text-flag">
-            Flagged on {item.flagged_clause.clause_code} — {item.flagged_clause.title}
+            {flagMessage(
+              item.flagged_clause.source_type === "agency"
+                ? "compliance_violation"
+                : "brand_violation",
+              {
+                clauseCode: item.flagged_clause.clause_code,
+                clauseTitle: item.flagged_clause.title,
+                clientName: item.client_name,
+              },
+            )}
           </p>
-          <p className="mt-1 whitespace-pre-wrap text-sm text-body">
+          <p className="mt-2 whitespace-pre-wrap text-sm text-body">
             {item.flagged_clause.text}
+          </p>
+          {/* Said before the button, not after it. Submitting past a flag is the
+              act that puts a row in front of the Agency Admin, and a creator
+              should know that before they choose it rather than discover it. */}
+          <p className="mt-2 text-xs text-flag">
+            Edit it to clear this. Submitting it as it stands is recorded for the
+            agency admin.
           </p>
         </div>
       ) : null}

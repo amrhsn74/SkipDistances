@@ -23,6 +23,7 @@ import { extractBriefFields, type FieldExtractor } from "./extractBriefFields";
 import { proposePlan, type ProposedItem } from "./proposePlan";
 import { submitBrief, type SubmitBriefResult } from "./submitBrief";
 import type { Selection } from "../domain/planSelection";
+import { flagMessage } from "../domain/flagMessages";
 
 /**
  * One turn of a conversation.
@@ -411,9 +412,18 @@ function describe(submitted: SubmitBriefResult): string {
     case "DRAFT":
       return `Drafted ${drafted} item${drafted === 1 ? "" : "s"}. Each one cites the rules it was written under -- review them, then submit for approval.`;
     case "FLAG": {
-      const clause = submitted.clauseCode ? ` (Clause ${submitted.clauseCode})` : "";
-      const reason = submitted.reason ? ` ${submitted.reason}` : "";
-      return `That reached a rule I cannot draft past${clause}.${reason} ${flagged} item${flagged === 1 ? "" : "s"} flagged for a human.`;
+      // Phrased through the shared table so the creator reads the same sentence
+      // the Admin would, and told plainly that nothing has been reported: the
+      // flag is on the draft, not on them, and it stays that way unless they
+      // submit the item anyway. See `queueOrFlag` and `submitForReview`.
+      const explanation = flagMessage(submitted.flagType ?? "brand_violation", {
+        clauseCode: submitted.clauseCode,
+        clauseTitle: submitted.clauseTitle,
+        clientName: submitted.clientName,
+        reason: submitted.reason,
+      });
+
+      return `${explanation} ${flagged} item${flagged === 1 ? "" : "s"} held back — nothing has been reported, and nothing will be unless you submit it as it stands.`;
     }
     case "REQUEST_INFO": {
       const reason = submitted.reason ?? "I need more before I can draft this.";

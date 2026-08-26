@@ -81,7 +81,6 @@ function flagResult(
 async function rememberCreated(result: Awaited<ReturnType<typeof queueOrFlag>>) {
   contentItemIds.push(...result.drafted.map((d) => d.contentItemId));
   contentItemIds.push(...result.flagged.map((f) => f.contentItemId));
-  flagIds.push(...result.flagged.map((f) => f.flagId));
 }
 
 describe("queueOrFlag", () => {
@@ -146,21 +145,20 @@ describe("queueOrFlag", () => {
     expect(row.status).toBe("flagged");
     expect(row.flagged_clause_id).toBe(cr4.clause_id);
 
-    const flagRow = await prisma.flag.findUniqueOrThrow({
-      where: { flag_id: result.flagged[0].flagId },
-    });
-    expect(flagRow).toMatchObject({
-      campaign_id: campaign.campaign_id,
-      content_item_id: row.content_item_id,
-      clause_id: cr4.clause_id,
-      flag_type: "brand_violation",
-      severity: "high",
+    // The item carries everything needed to explain the refusal...
+    expect(result.flagged[0]).toMatchObject({
+      clauseCode: "CR.4",
+      flagType: "brand_violation",
     });
 
-    const audit = await prisma.auditLog.findMany({
-      where: { entity_type: "Flag", entity_id: flagRow.flag_id },
+    // ...but no Flag row exists yet. A refusal the creator reads and abandons is
+    // not evidence of anything, and recording it would fill the Admin's table
+    // with drafts nobody ever stood behind. `submitForReview` raises the row if
+    // and when they submit it anyway.
+    const flags = await prisma.flag.findMany({
+      where: { content_item_id: row.content_item_id },
     });
-    expect(audit.map((a) => a.action)).toContain("flag_raised");
+    expect(flags).toHaveLength(0);
   });
 
   it("holds request-info outcomes without inventing a ContentItem or Flag", async () => {

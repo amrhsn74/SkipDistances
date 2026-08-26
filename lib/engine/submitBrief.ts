@@ -85,6 +85,12 @@ export type SubmitBriefResult = {
   outcome: IntakeOutcome;
   /** The clause the outcome cites, where it cites one. */
   clauseCode: string | null;
+  /** That clause's title, so a message can read as a sentence rather than a code. */
+  clauseTitle: string | null;
+  /** Which kind of rule was broken, for phrasing the refusal. */
+  flagType: string | null;
+  /** The client, so a creator working across several knows whose rule this was. */
+  clientName: string | null;
   /** Human-readable reason for the outcome, straight from the Phase 2 result. */
   reason: string | null;
   counts: { drafted: number; flagged: number; requestInfo: number };
@@ -194,6 +200,9 @@ export async function submitBrief(
     campaign: persisted,
     outcome: outcomeOf(run),
     clauseCode: clauseOf(run),
+    clauseTitle: clauseTitleOf(run),
+    flagType: run.queued?.flagged[0]?.flagType ?? null,
+    clientName: run.intake.client?.name ?? null,
     reason: reasonOf(run),
     counts: {
       drafted: run.queued?.drafted.length ?? 0,
@@ -242,6 +251,19 @@ export function outcomeOf(run: IntakeRunResult): IntakeOutcome {
  * already retrieved, rather than by going back to the database for a row the
  * pipeline has in hand.
  */
+/**
+ * The flagged clause's title.
+ *
+ * Looked up the same way `clauseOf` finds the code, and for the same reason it
+ * is worth carrying: "Clause CR.4" is a lookup task, "Clause CR.4 — Never
+ * discount" is a sentence.
+ */
+function clauseTitleOf(run: IntakeRunResult): string | null {
+  const flaggedClauseId = run.queued?.flagged[0]?.clauseId;
+  if (!flaggedClauseId) return null;
+  return run.guidelines?.all.find((c) => c.clause_id === flaggedClauseId)?.title ?? null;
+}
+
 function clauseOf(run: IntakeRunResult): string | null {
   if (isHalted(run.intake)) return haltClause(run.intake);
 

@@ -63,7 +63,12 @@ export type CreatorItem = {
   updated_at: Date;
   citations: { clause_id: string; clause_code: string; title: string; source_type: string }[];
   /** The rule the engine flagged this on, where it flagged one. */
-  flagged_clause: { clause_code: string; title: string; text: string } | null;
+  flagged_clause: {
+    clause_code: string;
+    title: string;
+    text: string;
+    source_type: string;
+  } | null;
   /** How many reference files have been attached across every regeneration. */
   reference_count: number;
   /**
@@ -232,12 +237,24 @@ async function citationsFor(contentItemIds: string[], db: Db) {
  */
 async function clausesById(clauseIds: string[], db: Db) {
   if (clauseIds.length === 0) {
-    return new Map<string, { clause_code: string; title: string; text: string }>();
+    return new Map<
+      string,
+      { clause_code: string; title: string; text: string; source_type: string }
+    >();
   }
 
   const rows = await db.guidelineClause.findMany({
     where: { clause_id: { in: clauseIds } },
-    select: { clause_id: true, clause_code: true, title: true, text: true },
+    // `source_type` decides whether a refusal reads as an agency compliance rule
+    // or as this client's own brand guide -- a distinction the creator needs,
+    // since only one of them is negotiable with the client.
+    select: {
+      clause_id: true,
+      clause_code: true,
+      title: true,
+      text: true,
+      source_type: true,
+    },
   });
 
   return new Map(rows.map((r) => [r.clause_id, r]));

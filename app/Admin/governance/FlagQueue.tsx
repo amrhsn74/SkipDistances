@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Badge, EmptyState, type BadgeTone } from "../../components/Page";
+import { flagMessage } from "@/domain/flagMessages";
 
 /**
  * The misuse queue.
@@ -33,6 +34,7 @@ export type FlagRow = {
   raised_against: { user_id: string; name: string; email: string } | null;
   /** Parsed from `details` on the server, so the client renders rather than parses. */
   detail: {
+    clause_title?: string | null;
     prompt?: string | null;
     reason?: string | null;
     conversation_id?: string | null;
@@ -47,13 +49,9 @@ export type FlagRow = {
 const TONE: Record<string, BadgeTone> = { high: "danger", medium: "flag", low: "neutral" };
 
 /** What each flag type actually means, in a sentence an admin can act on. */
-const MEANING: Record<string, string> = {
-  approval_override_attempt: "A brief tried to skip or fake an approval.",
-  role_boundary_violation: "Someone attempted an action their role does not hold.",
-  cross_client_data: "An attempt to reach another client's data.",
-  off_task_generation: "The engine was prompted for something unrelated to the client.",
-  approval_churn: "An item has been declined repeatedly — a process signal, not a breach.",
-};
+// The wording lives in `lib/domain/flagMessages.ts` rather than here, so the
+// sentence an Admin reads and the one the creator was shown describe the same
+// event in the same terms. This screen renders; it does not phrase.
 
 export function FlagQueue({ flags }: { flags: FlagRow[] }) {
   if (flags.length === 0) {
@@ -119,7 +117,17 @@ function FlagCard({ flag }: { flag: FlagRow }) {
             {flag.resolved ? <Badge tone="ok">resolved</Badge> : null}
           </div>
 
-          <p className="mt-1 text-sm text-body">{MEANING[flag.flag_type] ?? ""}</p>
+          <p className="mt-1 text-sm text-body">
+            {flagMessage(
+              flag.flag_type,
+              {
+                clauseCode: flag.clause_code,
+                clauseTitle: flag.detail.clause_title ?? null,
+                reason: flag.detail.reason ?? null,
+              },
+              "admin",
+            )}
+          </p>
 
           <p className="mt-1 text-xs text-body">
             {flag.raised_against

@@ -4,6 +4,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { Badge } from "../Page";
+import {
+  PromptInput,
+  PromptInputActions,
+  PromptInputSubmit,
+  PromptInputTextarea,
+} from "./PromptInput";
 
 /**
  * The conversation itself.
@@ -163,31 +169,19 @@ export function ChatThread({
           event.preventDefault();
           void send();
         }}
-        className="flex gap-2"
       >
-        <textarea
+        <PromptInput
           value={prompt}
-          onChange={(event) => setPrompt(event.target.value)}
-          onKeyDown={(event) => {
-            // Enter sends, shift+enter breaks the line -- the convention
-            // everyone already has in their fingers.
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              void send();
-            }
-          }}
-          rows={2}
-          placeholder={`What do you need for ${clientName}?`}
-          className="flex-1 resize-none rounded-xl border border-edge bg-surface px-4 py-3 text-sm outline-none focus:border-accent"
+          onValueChange={setPrompt}
+          onSubmit={() => void send()}
+          isLoading={busy}
           disabled={busy}
-        />
-        <button
-          type="submit"
-          disabled={busy || prompt.trim() === ""}
-          className="self-end rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
         >
-          Send
-        </button>
+          <PromptInputTextarea placeholder={`What do you need for ${clientName}?`} />
+          <PromptInputActions className="justify-end px-1 pb-1">
+            <PromptInputSubmit disabled={busy || prompt.trim() === ""} isLoading={busy} />
+          </PromptInputActions>
+        </PromptInput>
       </form>
     </div>
   );

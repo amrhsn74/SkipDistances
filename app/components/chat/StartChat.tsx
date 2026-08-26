@@ -4,6 +4,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { EmptyState } from "../Page";
+import {
+  PromptInput,
+  PromptInputActions,
+  PromptInputSubmit,
+  PromptInputTextarea,
+} from "./PromptInput";
 
 /**
  * The box you type in first.
@@ -113,30 +119,25 @@ export function StartChat({
         </select>
       </label>
 
-      <div className="flex gap-2">
-        <textarea
-          value={prompt}
-          onChange={(event) => setPrompt(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              void start();
-            }
-          }}
-          rows={3}
+      <PromptInput
+        value={prompt}
+        onValueChange={setPrompt}
+        onSubmit={() => void start()}
+        isLoading={busy}
+        disabled={busy}
+      >
+        <PromptInputTextarea
           placeholder={`What do you need for ${clientName}? For example: three Instagram posts launching the new cold brew, aimed at office workers.`}
-          className="flex-1 resize-none rounded-xl border border-edge bg-surface px-4 py-3 text-sm outline-none focus:border-accent"
-          disabled={busy}
           autoFocus
         />
-        <button
-          type="submit"
-          disabled={busy || prompt.trim() === ""}
-          className="self-end rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
-        >
-          {busy ? "Starting…" : "Send"}
-        </button>
-      </div>
+        <PromptInputActions className="justify-end px-1 pb-1">
+          <PromptInputSubmit
+            disabled={busy || prompt.trim() === ""}
+            isLoading={busy}
+            label="Start"
+          />
+        </PromptInputActions>
+      </PromptInput>
 
       <p className="mt-2 text-xs text-body">
         Grounded in {clientName}&rsquo;s brand guide and the agency standards. The engine will ask

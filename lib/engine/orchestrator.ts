@@ -91,7 +91,14 @@ export function toBriefFields(analysis: BriefAnalysis) {
     // The raw reference, not the resolved id: Clause 0.5 asks whether the brief
     // *stated* a client, which "not on roster" does. Whether that client exists
     // is Clause 0.6's question, and it has already been asked by this point.
-    client: analysis.client_reference,
+    //
+    // The id is the fallback, not a substitute. A brief written as "Client:
+    // CL-101" states its client perfectly well, and the extractor reports that
+    // as a `client_id` with a null `client_reference` -- so reading the
+    // reference alone would call such a brief incomplete for naming its client
+    // too precisely. Both come from the same extraction of the same text, so
+    // this widens nothing: a brief naming no client at all still has neither.
+    client: analysis.client_reference ?? analysis.client_id,
     objective: analysis.objective,
     audience: analysis.audience,
     channels: analysis.channels.length > 0 ? analysis.channels.join(", ") : null,

@@ -133,6 +133,20 @@ describe("the brief handed to the engine", () => {
     expect(text).toContain("Channels: instagram");
   });
 
+  it("writes the roster code alongside the name", () => {
+    const accumulated = foldExtractions([
+      { client: "NileFit", objective: "launch", audience: "students", channels: "instagram" },
+    ]);
+
+    const text = toBriefText(accumulated, [], "NileFit", "CL-101");
+
+    // `analyzeBrief` fills client_id only from a literal CL-nnn code. Writing
+    // the name alone produced a brief with no code, and Clause 0.6 then flagged
+    // every chat-produced campaign as "not on the roster" -- for the client the
+    // thread was scoped to by construction.
+    expect(text).toContain("Client: NileFit (CL-101)");
+  });
+
   it("keeps the creator's own words, and drops the engine's", () => {
     const accumulated = foldExtractions([
       { client: "Cairo Roast", objective: "launch", audience: "students", channels: "instagram" },

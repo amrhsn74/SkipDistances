@@ -176,6 +176,7 @@ export async function chatTurn(
     accumulated,
     [...conversation.turns, { role: "creator", body: text }],
     conversation.client.name,
+    conversation.client.client_id,
   );
 
   // The same function the account manager's form calls. Everything the brief

@@ -1,4 +1,5 @@
 import { prisma, type Db } from "../db";
+import { writeAudit } from "./auditLog";
 import { assignClientApprover } from "./clientContactInvariant";
 import { issueOtp, type IssuedOtp } from "./otp";
 
@@ -95,6 +96,21 @@ export async function createClientContact(
     },
     select: { user_id: true, name: true, email: true, status: true },
   });
+
+  // P11.1: the account itself, not only the assignment and the code that follow.
+  // Both of those write their own rows, and neither says a *person was created*
+  // -- which is the fact an admin reviewing "who can reach this client" needs.
+  // Never records the email as a credential, only as the identifier it is.
+  await writeAudit(
+    {
+      entityType: "User",
+      entityId: user.user_id,
+      action: "created",
+      performedById: createdById,
+      details: { user_type: "client_contact", client_id: clientId, status: user.status },
+    },
+    db,
+  );
 
   // Throws `SingleClientApproverError` if this user already approves elsewhere.
   // Unreachable for a user created two lines above, and called anyway: the

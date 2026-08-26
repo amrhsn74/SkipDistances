@@ -145,9 +145,30 @@ export function toBriefText(
    * is visible to a reviewer rather than silently erased.
    */
   clientName?: string | null,
+  /**
+   * The roster code, written into the brief alongside the name.
+   *
+   * `analyzeBrief` fills `client_id` only when a literal CL-nnn code appears in
+   * the text -- deliberately, since deciding *which* client a name refers to is
+   * `resolveClient`'s job, not an extractor's guess. The account manager's path
+   * satisfies that because they paste briefs that carry the code.
+   *
+   * A conversation does not: it is opened against a client id, and the creator
+   * then talks about the brand by name. Writing only the name produced a brief
+   * with no code, so `client_id` came back null and Clause 0.6 flagged every
+   * chat-produced campaign as "not on the roster" -- for a client the thread was
+   * scoped to by construction.
+   *
+   * So the code is stated, because here it is known rather than inferred. This
+   * narrows nothing: `resolveClient` still resolves it against the roster and
+   * still flags an unknown or inactive client, exactly as before.
+   */
+  clientId?: string | null,
 ): string {
   const lines = [
-    `Client: ${clientName ?? accumulated.fields.client ?? ""}`,
+    `Client: ${[clientName ?? accumulated.fields.client ?? "", clientId ? `(${clientId})` : ""]
+      .filter(Boolean)
+      .join(" ")}`,
     `Objective: ${accumulated.fields.objective ?? ""}`,
     `Audience: ${accumulated.fields.audience ?? ""}`,
     `Channels: ${accumulated.fields.channels ?? ""}`,

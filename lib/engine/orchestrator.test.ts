@@ -324,3 +324,46 @@ describe("complete intake pipeline", () => {
     expect(actual["B-026"]).toBe("FLAG");
   }, 30_000);
 });
+
+/**
+ * Clause 0.5's client field.
+ *
+ * A brief that names its client as a bare roster code states its client. The
+ * extractor reports that as a `client_id` with a null `client_reference`, so
+ * reading the reference alone called such a brief incomplete -- which is how
+ * every chat-produced campaign came back REQUEST_INFO for naming its client too
+ * precisely.
+ */
+describe("toBriefFields", () => {
+  const base = {
+    client_reference: null,
+    client_id: null,
+    title: null,
+    objective: "launch",
+    audience: "students",
+    channels: ["instagram"],
+    deliverables: [],
+    notes: null,
+    date: null,
+    explicitly_missing: [],
+  };
+
+  it("uses the written reference when there is one", () => {
+    expect(toBriefFields({ ...base, client_reference: "NileFit" }).client).toBe("NileFit");
+  });
+
+  it("falls back to a resolved id when the reference is null", () => {
+    expect(toBriefFields({ ...base, client_id: "CL-101" }).client).toBe("CL-101");
+  });
+
+  it("prefers the reference over the id when both are present", () => {
+    const fields = toBriefFields({ ...base, client_reference: "NileFit", client_id: "CL-101" });
+    expect(fields.client).toBe("NileFit");
+  });
+
+  it("still reports no client when the brief names none", () => {
+    // The fallback must not manufacture one -- Clause 0.5 has to keep failing
+    // for B-012 and B-013.
+    expect(toBriefFields(base).client).toBeNull();
+  });
+});

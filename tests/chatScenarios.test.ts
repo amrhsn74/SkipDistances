@@ -86,12 +86,16 @@ vi.mock("@/engine/analyzeBrief", async (importOriginal) => {
       const field = (label: string) =>
         new RegExp(`^${label}: (.*)$`, "m").exec(briefText)?.[1]?.trim() || null;
 
-      const client = field("Client");
+      // `toBriefText` writes "Name (CL-nnn)", so both halves are read out --
+      // mirroring the real extractor, which reports a literal CL-nnn code as
+      // `client_id` and anything else as `client_reference`.
+      const written = field("Client");
+      const code = /\((CL-\d+)\)/.exec(written ?? "")?.[1] ?? null;
+      const name = (written ?? "").replace(/\s*\(CL-\d+\)\s*/, "").trim() || null;
+
       return {
-        client_reference: client,
-        // The scenarios name the client through the conversation's own scope,
-        // so the id is resolved from the row rather than read out of the text.
-        client_id: clientIdForName(client),
+        client_reference: name,
+        client_id: code ?? clientIdForName(name),
         title: field("Objective"),
         objective: field("Objective"),
         audience: field("Audience"),

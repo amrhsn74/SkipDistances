@@ -246,12 +246,12 @@ The Admin is the accountability role: they assign who works on what, and they ar
 
 Two things: the completeness pass confirming Phase 2's audit habit held everywhere, and the Admin dashboard that makes `P2.11`–`P2.13` operable. The Admin is the accountability role — without this phase they have powers in the domain layer and nowhere to exercise them.
 
-- [ ] `P11.1` — Walk every mutating endpoint from Phase 4 and every domain function from Phase 2 that changes state; confirm each writes an `AuditLog` row. Fill any gap found.
-- [ ] `P11.2` — `/Admin` role management: the client roster with its assigned account manager, content lead, creators and client contacts; change any of them inline, wired to `P2.11`. This is the PRD's "Admin edits the fields directly on a client record; no dedicated user-management screen".
-- [ ] `P11.3` — `/Admin` audit log view: every `AuditLog` row, filterable by client, entity type, action and actor. Cross-client by design — the one view that is not scoped, because the Admin's job is oversight.
-- [ ] `P11.4` — `/Admin` misuse queue: open `Flag` rows from `P2.12`, ranked by severity, showing what happened, who did it, and the clause or rule involved; resolve with notes (writes `flag_resolved`). Override attempts and cross-client tripwires sort above churn.
-- [ ] `P11.5` — `/Admin` cross-client operational view: where every account stands, per the PRD's "cross-client view of where every account stands". Reuses `P4.8`'s summary query unscoped.
-- [ ] `P11.6` — Test: cross-client visibility belongs to the Content Lead and Agency Admin, and to nobody else. Drive the same queries as each role through `P2.E`'s `visibleClientIds` and assert an account manager sees only clients they manage, a content creator only their assignments, and a client contact exactly one — the counterpart to `P10.4`, proving the two exceptions are deliberate rather than holes.
+- [x] `P11.1` — Walk every mutating endpoint from Phase 4 and every domain function from Phase 2 that changes state; confirm each writes an `AuditLog` row. Fill any gap found.
+- [x] `P11.2` — `/Admin` role management: the client roster with its assigned account manager, content lead, creators and client contacts; change any of them inline, wired to `P2.11`. This is the PRD's "Admin edits the fields directly on a client record; no dedicated user-management screen".
+- [x] `P11.3` — `/Admin` audit log view: every `AuditLog` row, filterable by client, entity type, action and actor. Cross-client by design — the one view that is not scoped, because the Admin's job is oversight.
+- [x] `P11.4` — `/Admin` misuse queue: open `Flag` rows from `P2.12`, ranked by severity, showing what happened, who did it, and the clause or rule involved; resolve with notes (writes `flag_resolved`). Override attempts and cross-client tripwires sort above churn.
+- [x] `P11.5` — `/Admin` cross-client operational view: where every account stands, per the PRD's "cross-client view of where every account stands". Reuses `P4.8`'s summary query unscoped.
+- [x] `P11.6` — Test: cross-client visibility belongs to the Content Lead and Agency Admin, and to nobody else. Drive the same queries as each role through `P2.E`'s `visibleClientIds` and assert an account manager sees only clients they manage, a content creator only their assignments, and a client contact exactly one — the counterpart to `P10.4`, proving the two exceptions are deliberate rather than holes.
 
 ---
 

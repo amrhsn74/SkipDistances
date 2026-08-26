@@ -49,7 +49,8 @@ export type NavIcon =
   | "requests"
   | "guide"
   | "governance"
-  | "chat";
+  | "chat"
+  | "audit";
 
 /**
  * The nav for a role.
@@ -100,6 +101,10 @@ export const ROLE_NAV: Record<EffectiveRole, readonly NavItem[]> = {
   agency_admin: [
     { href: "/Admin", label: "Overview", icon: "overview" },
     { href: "/Admin/governance", label: "Governance", icon: "governance" },
+    // Who works on what. The PRD gives the admin no user-management screen, so
+    // this is the client roster with its seats editable in place.
+    { href: "/Admin/roles", label: "Roles", icon: "clients" },
+    { href: "/Admin/audit", label: "Audit trail", icon: "audit" },
   ],
 };
 

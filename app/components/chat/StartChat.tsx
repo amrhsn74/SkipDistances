@@ -4,9 +4,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { EmptyState } from "../Page";
+import { ACCEPTED_MIME_TYPES } from "@/domain/referenceTypes";
+
 import {
   PromptInput,
   PromptInputActions,
+  PromptInputAttach,
   PromptInputSubmit,
   PromptInputTextarea,
 } from "./PromptInput";
@@ -39,6 +42,7 @@ export function StartChat({
 
   const [clientId, setClientId] = useState(clients[0]?.client_id ?? "");
   const [prompt, setPrompt] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -109,7 +113,7 @@ export function StartChat({
         <select
           value={clientId}
           onChange={(event) => setClientId(event.target.value)}
-          className="w-full max-w-xs rounded-xl border border-edge bg-surface px-3 py-2 text-sm outline-none focus:border-accent"
+          className="w-full max-w-xs rounded-xl border border-edge bg-surface px-3 py-2 text-sm outline-none focus:border-amber-brand"
         >
           {clients.map((client) => (
             <option key={client.client_id} value={client.client_id}>
@@ -130,7 +134,13 @@ export function StartChat({
           placeholder={`What do you need for ${clientName}? For example: three Instagram posts launching the new cold brew, aimed at office workers.`}
           autoFocus
         />
-        <PromptInputActions className="justify-end px-1 pb-1">
+        <PromptInputActions className="justify-between px-1 pb-1">
+          <PromptInputAttach
+            files={files}
+            onFiles={setFiles}
+            disabled={busy}
+            accept={ACCEPTED_MIME_TYPES.join(",")}
+          />
           <PromptInputSubmit
             disabled={busy || prompt.trim() === ""}
             isLoading={busy}

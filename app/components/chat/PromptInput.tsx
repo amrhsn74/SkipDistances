@@ -12,7 +12,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from "r
  * primitives tree to style one control. The parts that matter are the behaviour,
  * and that is what is reproduced here.
  *
- * Colours are the project's own tokens -- `accent`, `edge`, `surface`, `body`,
+ * Colours are the project's own tokens -- `amber-brand`, `edge`, `surface`, `body`,
  * `heading` -- so this control looks like the rest of the app and follows a
  * palette change with it. Nothing here hardcodes a colour.
  *
@@ -74,7 +74,7 @@ export function PromptInput({
       }}
     >
       <div
-        className={`rounded-3xl border border-edge bg-surface p-2 shadow-sm focus-within:border-accent ${className}`}
+        className={`rounded-3xl border border-edge bg-surface p-2 shadow-sm focus-within:border-amber-brand ${className}`}
       >
         {children}
       </div>
@@ -153,10 +153,80 @@ export function PromptInputAction({
 /**
  * The send button.
  *
- * The project's `accent` for the resting state and hover, matching every other
+ * The project's `amber-brand` for the resting state and hover, matching every other
  * primary action in the app rather than introducing a second button style on the
  * one screen people will use most.
  */
+/**
+ * Attaching reference material to a turn.
+ *
+ * The `accept` list comes from `referenceTypes`, the same module the server
+ * validates against -- PRD §4 puts video out of scope, and two copies of an
+ * allowlist is how a browser ends up offering a format the server then refuses.
+ * The check here is a courtesy; `storeReferences` re-validates every file.
+ *
+ * Rendered as a label wrapping a hidden input rather than a button that clicks
+ * one, because a label is already keyboard-reachable and announces itself. The
+ * button-plus-ref version needs its own focus handling to match, and usually
+ * does not get it.
+ */
+export function PromptInputAttach({
+  files,
+  onFiles,
+  disabled,
+  accept,
+}: {
+  files: File[];
+  onFiles: (files: File[]) => void;
+  disabled?: boolean;
+  /** Comma-separated MIME list. Defaults to the reference allowlist. */
+  accept: string;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <label
+        title="Attach an image, PDF, or document"
+        className={`flex cursor-pointer items-center gap-1.5 rounded-full border border-edge px-3 py-2 text-sm font-medium text-body transition hover:border-amber-brand hover:text-heading ${
+          disabled ? "pointer-events-none opacity-50" : ""
+        }`}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4 w-4"
+          aria-hidden
+        >
+          <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+        </svg>
+        <span className="sr-only">Attach files</span>
+        <input
+          type="file"
+          multiple
+          accept={accept}
+          disabled={disabled}
+          className="hidden"
+          onChange={(event) => {
+            onFiles([...(event.target.files ?? [])]);
+            // Cleared so choosing the same file twice in a row still fires a
+            // change event -- otherwise a re-attach after a removal does nothing.
+            event.target.value = "";
+          }}
+        />
+      </label>
+
+      {files.length > 0 ? (
+        <span className="text-xs text-body">
+          {files.length} file{files.length === 1 ? "" : "s"}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 export function PromptInputSubmit({
   disabled,
   isLoading,
@@ -170,9 +240,24 @@ export function PromptInputSubmit({
     <button
       type="submit"
       disabled={disabled}
-      className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+      title={label}
+      className="flex items-center gap-1.5 rounded-full bg-amber-brand px-4 py-2 text-sm font-semibold text-ink transition hover:bg-amber-dark disabled:opacity-50"
     >
-      {isLoading ? "Working…" : label}
+      <span>{isLoading ? "Working…" : label}</span>
+      {!isLoading ? (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4 w-4"
+          aria-hidden
+        >
+          <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+        </svg>
+      ) : null}
     </button>
   );
 }

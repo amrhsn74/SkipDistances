@@ -363,7 +363,7 @@ The role split this phase builds to. `P14.1a` is the permission change; every la
 - [x] `P14.12` — `/Creator/chat`: thread list, and the conversation view — turns, attachments, and the items produced inline. A produced item shows its clause citations, the same as the review screen.
 - [x] `P14.12a` — `/ContentLead/chat`: the same conversation view, reusing `P14.12`'s components rather than a second implementation. The lead's threads are cross-client, so the thread list carries a client column the creator's does not need. This also closes the gap where the lead holds `content.regenerate` today with no UI to reach it.
 - [x] `P14.12b` — `/ContentLead` assignment UI: assign a produced item to one of the client's creators, wired to `P14.1b`. The assigned creator sees it in their queue (`P7.x`).
-- [x] `P14.13` — Submit-for-review from the chat: items produced in a thread go to internal review through the existing `submitForReview` (`P6.x`), unchanged. Nothing about the gate is re-implemented here.
+- [x] `P14.13` — Items produced in a thread reach internal review through the existing `submitForReview` (`P6.x`), unchanged — but **not from the chat screen**. Generating a draft and declaring it ready are different acts, and a submit button beside a freshly generated item invites the two to be confused. Chat links into Assignments, where the creator refines and submits deliberately, which is what the reset-on-edit design exists to require. Nothing about the gate is re-implemented anywhere.
 - [x] `P14.14` — `/Admin` misuse queue (`P11.4`) gains transcript context: an `off_task_generation` row opens the thread around the refused turn. This is the conduct-review view the phase exists for.
 
 ### Tests

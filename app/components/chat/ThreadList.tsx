@@ -51,7 +51,7 @@ export function ThreadList({
             <li key={thread.conversation_id}>
               <Link
                 href={`${basePath}/${thread.conversation_id}`}
-                className="flex items-center justify-between gap-4 rounded-xl border border-edge bg-surface px-4 py-3 hover:border-accent"
+                className="flex items-center justify-between gap-4 rounded-xl border border-edge bg-surface px-4 py-3 hover:border-amber-brand"
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-heading">

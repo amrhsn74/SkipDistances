@@ -83,7 +83,7 @@ export function CreatorOverview({
                   >
                     <Link
                       href={`/Creator/assignments?client=${client.client_id}`}
-                      className="min-w-0 text-sm font-medium text-heading hover:text-accent"
+                      className="min-w-0 text-sm font-medium text-heading hover:text-amber-dark"
                     >
                       {client.name}
                     </Link>
@@ -107,7 +107,7 @@ export function CreatorOverview({
           </p>
           <Link
             href="/Creator/chat"
-            className="inline-block rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white"
+            className="inline-block rounded-xl bg-amber-brand px-4 py-2 text-sm font-semibold text-ink"
           >
             New conversation
           </Link>
@@ -118,7 +118,7 @@ export function CreatorOverview({
                 <li key={thread.conversation_id}>
                   <Link
                     href={`/Creator/chat/${thread.conversation_id}`}
-                    className="block truncate text-xs text-body hover:text-accent"
+                    className="block truncate text-xs text-body hover:text-amber-dark"
                   >
                     {thread.title ?? "Untitled"} · {thread.client_name}
                   </Link>

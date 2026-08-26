@@ -121,7 +121,7 @@ export default async function Page({
           name="q"
           defaultValue={search}
           placeholder="Filter by client name or id"
-          className="w-full max-w-sm rounded-xl border border-edge bg-surface px-3 py-2 text-sm outline-none focus:border-accent"
+          className="w-full max-w-sm rounded-xl border border-edge bg-surface px-3 py-2 text-sm outline-none focus:border-amber-brand"
         />
       </form>
 

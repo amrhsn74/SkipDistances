@@ -113,7 +113,7 @@ function AssignRow({
           value={assignee}
           onChange={(event) => void assign(event.target.value)}
           disabled={busy}
-          className="rounded-xl border border-edge bg-surface px-3 py-2 text-sm outline-none focus:border-accent disabled:opacity-50"
+          className="rounded-xl border border-edge bg-surface px-3 py-2 text-sm outline-none focus:border-amber-brand disabled:opacity-50"
           aria-label={`Assign ${item.content_form}`}
         >
           <option value="">Unassigned</option>

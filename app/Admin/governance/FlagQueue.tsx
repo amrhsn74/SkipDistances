@@ -134,7 +134,7 @@ function FlagCard({ flag }: { flag: FlagRow }) {
           <button
             type="button"
             onClick={() => setOpen((current) => !current)}
-            className="shrink-0 rounded-xl border border-edge px-3 py-1.5 text-xs font-semibold text-heading hover:border-accent"
+            className="shrink-0 rounded-xl border border-edge px-3 py-1.5 text-xs font-semibold text-heading hover:border-amber-brand"
           >
             {open ? "Cancel" : "Resolve"}
           </button>
@@ -156,7 +156,7 @@ function FlagCard({ flag }: { flag: FlagRow }) {
             onChange={(event) => setNotes(event.target.value)}
             rows={2}
             placeholder="What was done about it?"
-            className="w-full resize-none rounded-xl border border-edge bg-surface px-3 py-2 text-sm outline-none focus:border-accent"
+            className="w-full resize-none rounded-xl border border-edge bg-surface px-3 py-2 text-sm outline-none focus:border-amber-brand"
           />
           {/* Notes are required, not optional. A flag closed with no explanation
               removes the row from the queue and takes the reason with it. */}
@@ -165,7 +165,7 @@ function FlagCard({ flag }: { flag: FlagRow }) {
               type="button"
               onClick={() => void resolve()}
               disabled={busy || notes.trim() === ""}
-              className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+              className="rounded-xl bg-amber-brand px-4 py-2 text-sm font-semibold text-ink transition hover:opacity-90 disabled:opacity-50"
             >
               {busy ? "Saving…" : "Mark resolved"}
             </button>
@@ -216,7 +216,7 @@ function Detail({ flag }: { flag: FlagRow }) {
       {detail.conversation_id ? (
         <Link
           href={`/Admin/conversations/${detail.conversation_id}`}
-          className="inline-block text-xs font-semibold text-accent hover:underline"
+          className="inline-block text-xs font-semibold text-amber-dark hover:underline"
         >
           Open the conversation →
         </Link>

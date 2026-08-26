@@ -182,7 +182,7 @@ function Seat({
             value={picked}
             onChange={(event) => setPicked(event.target.value)}
             disabled={busy}
-            className="rounded-xl border border-edge bg-surface px-2 py-1 text-xs outline-none focus:border-accent disabled:opacity-50"
+            className="rounded-xl border border-edge bg-surface px-2 py-1 text-xs outline-none focus:border-amber-brand disabled:opacity-50"
             aria-label={`Assign ${label}`}
           >
             <option value="">Add…</option>
@@ -203,7 +203,7 @@ function Seat({
               }
             }}
             disabled={busy || picked === ""}
-            className="rounded-lg bg-accent px-3 py-1 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+            className="rounded-lg bg-amber-brand px-3 py-1 text-xs font-semibold text-ink transition hover:opacity-90 disabled:opacity-50"
           >
             Assign
           </button>

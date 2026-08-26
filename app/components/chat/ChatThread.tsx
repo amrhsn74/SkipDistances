@@ -1,12 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { Badge } from "../Page";
+import { ACCEPTED_MIME_TYPES } from "@/domain/referenceTypes";
+
 import {
   PromptInput,
   PromptInputActions,
+  PromptInputAttach,
   PromptInputSubmit,
   PromptInputTextarea,
 } from "./PromptInput";
@@ -64,6 +68,7 @@ export function ChatThread({
   // has confirmed it. Everything else comes from `initialTurns`.
   const [pending, setPending] = useState<Turn[]>([]);
   const [prompt, setPrompt] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [missing, setMissing] = useState<string[]>([]);
@@ -204,7 +209,13 @@ export function ChatThread({
           disabled={busy}
         >
           <PromptInputTextarea placeholder={`What do you need for ${clientName}?`} />
-          <PromptInputActions className="justify-end px-1 pb-1">
+          <PromptInputActions className="justify-between px-1 pb-1">
+            <PromptInputAttach
+              files={files}
+              onFiles={setFiles}
+              disabled={busy}
+              accept={ACCEPTED_MIME_TYPES.join(",")}
+            />
             <PromptInputSubmit disabled={busy || prompt.trim() === ""} isLoading={busy} />
           </PromptInputActions>
         </PromptInput>
@@ -222,7 +233,7 @@ function TurnBubble({ turn }: { turn: Turn }) {
       <div
         className={[
           "max-w-[42rem] rounded-2xl px-4 py-3 text-sm",
-          isCreator ? "bg-accent text-white" : "border border-edge bg-canvas text-heading",
+          isCreator ? "bg-amber-brand text-white" : "border border-edge bg-canvas text-heading",
           // A refused turn is marked on the turn itself, so the transcript shows
           // where the thread went wrong rather than only that it did.
           refused ? "ring-2 ring-danger" : "",
@@ -242,9 +253,20 @@ function TurnBubble({ turn }: { turn: Turn }) {
 function ProducedItems({ items }: { items: ProducedItem[] }) {
   return (
     <div className="rounded-2xl border border-edge bg-surface p-4">
-      <h2 className="mb-3 font-heading text-sm font-semibold text-heading">
+      <h2 className="mb-1 font-heading text-sm font-semibold text-heading">
         Produced in this conversation
       </h2>
+      {/* No submit control here, deliberately. Generating a draft is not the
+          same act as saying it is ready, and a button beside a freshly generated
+          item invites the two to be confused. The creator refines it in
+          Assignments and submits from there -- one deliberate act, which is what
+          the reset-on-edit design exists to require. */}
+      <p className="mb-3 text-xs text-body">
+        <Link href="/Creator/assignments" className="text-amber-dark hover:underline">
+          Refine and submit these in Assignments
+        </Link>{" "}
+        when they are ready for review.
+      </p>
       <ul className="space-y-2">
         {items.map((item) => (
           <li
@@ -271,7 +293,6 @@ function ProducedItems({ items }: { items: ProducedItem[] }) {
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <Badge tone={item.status === "flagged" ? "flag" : "neutral"}>{item.status}</Badge>
-              <SubmitButton item={item} />
             </div>
           </li>
         ))}
@@ -280,63 +301,3 @@ function ProducedItems({ items }: { items: ProducedItem[] }) {
   );
 }
 
-/**
- * Handing one item to the internal reviewer.
- *
- * Calls the same `PATCH ... { action: "submit" }` the assignments screen calls,
- * which is `submitForReview` -- the deliberate resubmission the whole reset-on-
- * edit design exists to require. Nothing about the gate is re-implemented here;
- * an item produced in a conversation enters review exactly as one produced from
- * a brief does.
- *
- * Only a `drafted` item offers the button. A flagged one has to be cleared
- * first, and the status machine refuses `flagged -> pending_internal_review`
- * directly -- so offering it would be offering a refusal.
- */
-function SubmitButton({ item }: { item: ProducedItem }) {
-  const router = useRouter();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  if (item.status !== "drafted") return null;
-
-  async function submit() {
-    setBusy(true);
-    setError(null);
-    try {
-      const response = await fetch(`/api/content-items/${item.content_item_id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "submit" }),
-      });
-      if (!response.ok) {
-        const json = await response.json();
-        setError(json?.error?.message ?? "Could not submit that.");
-        return;
-      }
-      router.refresh();
-    } catch {
-      setError("Could not submit that.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => void submit()}
-        disabled={busy}
-        className="rounded-lg border border-edge px-3 py-1 text-xs font-semibold text-heading hover:border-accent disabled:opacity-50"
-      >
-        Submit for review
-      </button>
-      {error ? (
-        <span className="text-xs text-danger" role="alert">
-          {error}
-        </span>
-      ) : null}
-    </>
-  );
-}

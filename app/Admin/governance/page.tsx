@@ -69,7 +69,7 @@ export default async function Page({
         <a
           href="/Admin/governance"
           className={`rounded-xl border px-3 py-1.5 font-semibold ${
-            includeResolved ? "border-edge text-body" : "border-accent text-accent"
+            includeResolved ? "border-edge text-body" : "border-amber-brand text-amber-dark"
           }`}
         >
           Open
@@ -77,7 +77,7 @@ export default async function Page({
         <a
           href="/Admin/governance?resolved=1"
           className={`rounded-xl border px-3 py-1.5 font-semibold ${
-            includeResolved ? "border-accent text-accent" : "border-edge text-body"
+            includeResolved ? "border-amber-brand text-amber-dark" : "border-edge text-body"
           }`}
         >
           Including resolved

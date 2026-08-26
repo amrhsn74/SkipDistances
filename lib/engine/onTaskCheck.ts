@@ -227,3 +227,152 @@ export async function checkOnTask(
     reason: judged.reason,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Conversations (Phase 14)
+// ---------------------------------------------------------------------------
+
+/**
+ * The same check, asked of a turn in a thread.
+ *
+ * It has to be the thread and not the turn. "Make it shorter" names no client,
+ * no brand and no deliverable, so judged alone it would reach the model with
+ * nothing to go on -- and an ordinary thing to say on the fourth turn of real
+ * work would depend on the model's charity. Judged against what the thread has
+ * established, it is plainly on-task.
+ *
+ * The consequence worth stating: a creator cannot escape the check by splitting
+ * an off-task request across turns, because every turn is judged against what
+ * the conversation is *for*, not against what the previous turn happened to
+ * say. A thread about Cairo Roast captions that turns to someone's CV is
+ * refused at that turn, however many on-task turns preceded it.
+ *
+ * The asymmetry from `P3.11` is unchanged and load-bearing: the deterministic
+ * pass may only ever ALLOW.
+ */
+
+/** What the thread has established, as the check needs to see it. */
+export type ThreadContext = {
+  clientId: string;
+  clientName: string;
+  /** Earlier turns, oldest first. Only the creator's own words matter here. */
+  priorTurns: { role: string; body: string }[];
+  /** What the fold has established so far, where it has established anything. */
+  objective: string | null;
+  deliverables: string | null;
+};
+
+/**
+ * A thread's turn, judged.
+ *
+ * The deterministic pass runs against the turn plus the thread's subject, so a
+ * bare follow-up on an established thread is accepted cheaply rather than
+ * costing a call. An opening turn has no thread behind it, so it falls through
+ * to the model exactly as a regeneration prompt does.
+ */
+export async function checkTurnOnTask(
+  prompt: string,
+  thread: ThreadContext,
+  judge: OnTaskJudge = judgeTurnWithGemini,
+): Promise<OnTaskVerdict> {
+  const context: OnTaskContext = {
+    clientId: thread.clientId,
+    clientName: thread.clientName,
+    contentForm: thread.deliverables ?? "content",
+    platform: null,
+    contentBody: null,
+    campaignTitle: null,
+    campaignObjective: thread.objective,
+  };
+
+  const cheap = deterministicOnTask(prompt, context);
+  if (cheap.verdict === "on_task") {
+    return { onTask: true, stage: "deterministic", reason: `Mentions ${cheap.matched}.` };
+  }
+
+  // A follow-up on a thread already underway. Refinement language -- "shorter",
+  // "warmer", "try again" -- names nothing on its own, and on an established
+  // thread that is exactly what ordinary iteration looks like. Still an
+  // ALLOW-only path: matching nothing here just falls through to the model, so
+  // this can accept work early but can never refuse any.
+  const underway = thread.priorTurns.some((turn) => turn.role === "creator");
+  if (underway && REFINEMENT_WORDS.some((word) => words(prompt).has(word))) {
+    return {
+      onTask: true,
+      stage: "deterministic",
+      reason: "Refinement of work already underway in this thread.",
+    };
+  }
+
+  const answer = await judge(prompt, context);
+  return { onTask: answer.on_task, stage: "model", reason: answer.reason };
+}
+
+/**
+ * Words that mean "change what we already have".
+ *
+ * Meaningless on an opening turn, which is why this list is consulted only when
+ * the thread already has a creator turn behind it. Kept deliberately short: it
+ * only needs to catch the common iteration verbs, because anything it misses
+ * falls through to the model rather than being refused.
+ */
+const REFINEMENT_WORDS = [
+  "shorter",
+  "longer",
+  "warmer",
+  "punchier",
+  "again",
+  "instead",
+  "simpler",
+  "bolder",
+  "softer",
+  "tighten",
+  "expand",
+  "swap",
+  "revise",
+  "redo",
+];
+
+function buildThreadPrompt(prompt: string, context: OnTaskContext): string {
+  const priorObjective = context.campaignObjective ?? "(not yet stated)";
+  return [
+    "A content creator is working in an ongoing conversation with a content engine, producing marketing content for one client.",
+    "",
+    "What this conversation is about:",
+    `- Client: ${context.clientName} (${context.clientId})`,
+    `- Objective so far: ${priorObjective}`,
+    `- Deliverables so far: ${context.contentForm}`,
+    "",
+    "Their latest message:",
+    '"""',
+    prompt,
+    '"""',
+    "",
+    "Is this message part of producing content for this client?",
+    "",
+    "A message may be on-task without naming the client or the deliverable:",
+    '"shorter", "warmer tone", "try that again", "what about Ramadan" are all',
+    "ordinary things to say mid-conversation, and all on-task. Judge it against",
+    "what the conversation is for, not against whether it stands alone.",
+    "",
+    "Refuse when the message is plainly about something else -- personal admin,",
+    "a CV, general knowledge, code, another organisation's work -- even if",
+    "earlier messages in the conversation were on-task.",
+    "",
+    "Answer on_task, and give a one-sentence reason. If you refuse, the reason",
+    "is shown to an administrator reviewing the refusal, so say what you took",
+    "the message to be about.",
+  ].join("\n");
+}
+
+/** The real judge for a conversation turn. */
+export const judgeTurnWithGemini: OnTaskJudge = async (prompt, context) => {
+  return generateStructured<{ on_task: boolean; reason: string }>(
+    buildThreadPrompt(prompt, context),
+    ON_TASK_SCHEMA,
+    {
+      temperature: TEMPERATURE.deterministic,
+      systemInstruction: SYSTEM_INSTRUCTION,
+    },
+  );
+};

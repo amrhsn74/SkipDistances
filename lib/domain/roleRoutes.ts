@@ -48,7 +48,8 @@ export type NavIcon =
   | "approvals"
   | "requests"
   | "guide"
-  | "governance";
+  | "governance"
+  | "chat";
 
 /**
  * The nav for a role.
@@ -78,10 +79,14 @@ export const ROLE_NAV: Record<EffectiveRole, readonly NavItem[]> = {
   ],
   content_lead: [
     { href: "/ContentLead", label: "Overview", icon: "overview" },
+    // The lead prompts the engine as a creator does, and dispatches the result.
+    { href: "/ContentLead/chat", label: "Chat", icon: "chat" },
     { href: "/ContentLead/review", label: "Review", icon: "review" },
   ],
   content_creator: [
     { href: "/Creator", label: "Overview", icon: "overview" },
+    // First, not last: since Phase 14 this is where a creator's work starts.
+    { href: "/Creator/chat", label: "Chat", icon: "chat" },
     { href: "/Creator/assignments", label: "Assignments", icon: "assignments" },
   ],
   client_contact: [

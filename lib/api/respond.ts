@@ -19,6 +19,10 @@ import {
 import { SingleClientApproverError } from "../domain/clientContactInvariant";
 import { ClientValidationError } from "../domain/clientRoster";
 import { CommentTargetNotFoundError, CommentValidationError } from "../domain/comments";
+import {
+  ConversationAccessError,
+  ConversationNotFoundError,
+} from "../domain/conversations";
 import { PermissionDeniedError } from "../domain/permissions";
 import {
   PostRequestNotAllowedError,
@@ -27,6 +31,11 @@ import {
 } from "../domain/postRequests";
 import { ReferenceValidationError } from "../domain/referenceAttachments";
 import { GateClosedError, SchedulingError } from "../domain/scheduling";
+import {
+  ContentItemNotFoundError as AssignItemNotFoundError,
+  TaskAssignmentError,
+} from "../domain/taskAssignment";
+import { ChatTurnError } from "../engine/chatTurn";
 import { OffTaskPromptError, RegenerateItemError } from "../engine/regenerateItem";
 import { CampaignValidationError } from "../engine/submitBrief";
 import { PasswordChangeRequiredError, UnauthenticatedError } from "./request";
@@ -162,6 +171,39 @@ export function errorResponse(error: unknown): NextResponse<ApiError> {
       },
       { status: 409 },
     );
+  }
+
+  if (error instanceof TaskAssignmentError) {
+    // 422: the caller may dispatch for this client, but the person they named
+    // holds no creator role on it. A fixable request, not a forbidden one.
+    return jsonError(422, error.code, error.message);
+  }
+
+  if (error instanceof AssignItemNotFoundError) {
+    // Its own class rather than `approvals`' identically-named one, so the
+    // `instanceof` above cannot match the wrong module's error. Reachable only
+    // inside the caller's scope -- an item they may not see is denied by
+    // `enforce` first, and answers 403.
+    return jsonError(404, error.code, error.message);
+  }
+
+  if (error instanceof ConversationAccessError) {
+    // 403 with the same message a permission denial gets, and deliberately not a
+    // 404. Distinguishing "this thread is someone else's" from "no such thread"
+    // would let a creator enumerate their colleagues' conversations by id.
+    return jsonError(403, error.code, "You may not do that.");
+  }
+
+  if (error instanceof ConversationNotFoundError) {
+    // Reachable only for a thread the caller owns -- someone else's answers 403
+    // above, so a 404 here never discloses whether another person's thread
+    // exists.
+    return jsonError(404, error.code, error.message);
+  }
+
+  if (error instanceof ChatTurnError) {
+    // An empty turn. Caller error, and cheap to fix.
+    return jsonError(422, error.code, error.message);
   }
 
   if (error instanceof CommentTargetNotFoundError) {

@@ -3,7 +3,9 @@ import { describe, it, expect, vi } from "vitest";
 import {
   type OnTaskContext,
   type OnTaskJudge,
+  type ThreadContext,
   checkOnTask,
+  checkTurnOnTask,
   deterministicOnTask,
 } from "./onTaskCheck";
 
@@ -162,5 +164,79 @@ describe("checkOnTask", () => {
     expect(prompt).toBe("explain quantum physics");
     // The model needs the item's context to judge scope at all.
     expect(ctx.clientName).toBe("Cairo Roast");
+  });
+});
+
+/**
+ * The same check, in a conversation.
+ *
+ * A turn is judged against what the thread is *for*, not against whether it
+ * stands alone -- otherwise "make it shorter" would depend on the model's
+ * charity, and splitting an off-task request across turns would launder it.
+ */
+describe("a turn in a thread", () => {
+  const thread: ThreadContext = {
+    clientId: "CL-102",
+    clientName: "Cairo Roast",
+    priorTurns: [],
+    objective: null,
+    deliverables: null,
+  };
+
+  const underway: ThreadContext = {
+    ...thread,
+    priorTurns: [{ role: "creator", body: "a caption for the cold brew launch" }],
+    objective: "launch the cold brew",
+  };
+
+  const refuse: OnTaskJudge = async () => ({ on_task: false, reason: "Unrelated to this client." });
+  const allow: OnTaskJudge = async () => ({ on_task: true, reason: "On task." });
+
+  it("accepts a bare refinement mid-thread without paying for a call", async () => {
+    const judge = vi.fn(refuse);
+
+    const verdict = await checkTurnOnTask("make it shorter", underway, judge);
+
+    expect(verdict.onTask).toBe(true);
+    expect(verdict.stage).toBe("deterministic");
+    // The point of the fast path: an ordinary iteration costs nothing.
+    expect(judge).not.toHaveBeenCalled();
+  });
+
+  it("sends the same bare refinement to the model on an opening turn", async () => {
+    const judge = vi.fn(allow);
+
+    // "shorter" means nothing when there is nothing to shorten, so the cheap
+    // pass must not accept it -- it falls through, as an undecided turn should.
+    await checkTurnOnTask("make it shorter", thread, judge);
+
+    expect(judge).toHaveBeenCalled();
+  });
+
+  it("still accepts a turn that names the client outright", async () => {
+    const judge = vi.fn(refuse);
+
+    const verdict = await checkTurnOnTask("something for Cairo Roast", thread, judge);
+
+    expect(verdict.onTask).toBe(true);
+    expect(verdict.stage).toBe("deterministic");
+    expect(judge).not.toHaveBeenCalled();
+  });
+
+  it("refuses an off-task turn however many on-task turns preceded it", async () => {
+    const verdict = await checkTurnOnTask("write my CV", underway, refuse);
+
+    expect(verdict.onTask).toBe(false);
+    expect(verdict.stage).toBe("model");
+    expect(verdict.reason).toContain("Unrelated");
+  });
+
+  it("keeps the asymmetry: the cheap pass never refuses a thread turn", async () => {
+    // A turn matching nothing at all, on a thread with no history. The cheap
+    // pass has no way to say no -- it can only defer.
+    const verdict = await checkTurnOnTask("hmm", thread, allow);
+
+    expect(verdict.stage).toBe("model");
+    expect(verdict.onTask).toBe(true);
   });
 });

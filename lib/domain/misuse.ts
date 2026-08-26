@@ -270,13 +270,23 @@ export async function flagCrossClientAccess(
   );
 }
 
-/** A creator using the regeneration prompt for something off-task (`P3.11`). */
+/**
+ * A creator using the engine for something off-task (`P3.11`, `P14.8`).
+ *
+ * Raised from both surfaces: the item-level regeneration prompt, and a
+ * conversation turn. When it comes from a conversation, `conversationId` is
+ * recorded so the Admin's queue row can open the thread around the refused turn
+ * rather than showing an isolated excerpt -- which is the difference between
+ * "this person typed something odd once" and "this person spent nine turns
+ * trying to get the tool to write their CV".
+ */
 export async function flagOffTaskGeneration(
   input: {
     raisedAgainstId: string;
     prompt: string;
     contentItemId?: string | null;
     reason?: string;
+    conversationId?: string | null;
   },
   db: Db = prisma,
 ) {
@@ -287,9 +297,13 @@ export async function flagOffTaskGeneration(
       contentItemId: input.contentItemId ?? null,
       details: {
         // Truncated: enough for the Admin to judge, without the queue becoming a
-        // transcript of everything anyone ever typed.
+        // transcript of everything anyone ever typed. Where the refusal came
+        // from a conversation, the full thread is a click away via
+        // `conversation_id`, so the excerpt is a summary rather than the whole
+        // record.
         prompt: input.prompt.slice(0, 500),
         reason: input.reason ?? null,
+        conversation_id: input.conversationId ?? null,
       },
     },
     db,

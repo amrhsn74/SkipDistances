@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { prisma } from "@/db";
 import { visibleClientIds } from "@/domain/accessScope";
+import { getGuidelinesForClient } from "@/domain/retrievalScope";
 import {
   ConversationAccessError,
   ConversationNotFoundError,
@@ -29,9 +30,27 @@ export async function chatClients(user: ActingUser) {
   });
 }
 
-/** The thread list screen's data. */
+/**
+ * The thread list screen's data.
+ *
+ * Each client is carried with its own brand clauses, so the guide can appear the
+ * moment one is chosen in the picker rather than after a round trip. A creator
+ * is assigned to a handful of clients and each guide is at most a few clauses,
+ * so this is cheap -- and the alternative, fetching on change, would leave the
+ * panel a beat behind the selection it describes.
+ */
 export async function chatIndex(user: ActingUser) {
   const [threads, clients] = await Promise.all([listConversations(user), chatClients(user)]);
+
+  const withGuides = await Promise.all(
+    clients.map(async (client) => ({
+      ...client,
+      // The same scoped query the engine drafts from, so what a creator reads
+      // before writing is what their content will be grounded in.
+      brandClauses: (await getGuidelinesForClient(client.client_id)).brand,
+    })),
+  );
+
   return {
     threads: threads.map((thread) => ({
       conversation_id: thread.conversationId,
@@ -41,7 +60,7 @@ export async function chatIndex(user: ActingUser) {
       campaign_id: thread.campaignId,
       updated_at: thread.updatedAt.toISOString(),
     })),
-    clients,
+    clients: withGuides,
   };
 }
 
@@ -67,7 +86,10 @@ export async function chatThread(user: ActingUser, conversationId: string) {
     throw error;
   }
 
-  const [client, items] = await Promise.all([
+  // The client's own brand rules, for the panel on the thread. Read through the
+  // same scoped query the engine drafts from, so what a creator reads here is by
+  // construction what their content is grounded in.
+  const [client, items, guide] = await Promise.all([
     prisma.client.findUnique({
       where: { client_id: conversation.client_id },
       select: { client_id: true, name: true },
@@ -95,11 +117,15 @@ export async function chatThread(user: ActingUser, conversationId: string) {
           },
         })
       : Promise.resolve([]),
+    getGuidelinesForClient(conversation.client_id),
   ]);
 
   return {
     conversation,
     clientName: client?.name ?? conversation.client_id,
+    /** This client's own clauses. Empty for the majority of the roster, which
+     *  has no guide and is governed by the agency standards alone. */
+    brandClauses: guide.brand,
     turns: conversation.turns.map((turn) => ({
       turn_id: turn.turn_id,
       role: turn.role,

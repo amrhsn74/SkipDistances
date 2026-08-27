@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { EmptyState } from "../Page";
+import { ClientGuidePanel } from "./ClientGuidePanel";
 import { ACCEPTED_MIME_TYPES } from "@/domain/referenceTypes";
+import type { ScopedClause } from "@/domain/retrievalScope";
 
 import {
   PromptInput,
@@ -31,11 +33,18 @@ import {
  * exists with a refusal recorded in it, which is what the Admin needs to see
  * anyway.
  */
+/** A client the picker offers, with the rules that govern their content. */
+export type ChatClient = {
+  client_id: string;
+  name: string;
+  brandClauses: ScopedClause[];
+};
+
 export function StartChat({
   clients,
   basePath,
 }: {
-  clients: { client_id: string; name: string }[];
+  clients: ChatClient[];
   basePath: string;
 }) {
   const router = useRouter();
@@ -46,7 +55,8 @@ export function StartChat({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const clientName = clients.find((client) => client.client_id === clientId)?.name ?? "this client";
+  const chosen = clients.find((client) => client.client_id === clientId);
+  const clientName = chosen?.name ?? "this client";
 
   async function start() {
     const text = prompt.trim();
@@ -122,6 +132,15 @@ export function StartChat({
           ))}
         </select>
       </label>
+
+      {/* The chosen client's own rules, shown only once there is a chosen
+          client. Before that there is no such thing as "the brand guide" --
+          which is exactly why the nav holds the agency standards instead. */}
+      {chosen ? (
+        <div className="mb-3">
+          <ClientGuidePanel clientName={chosen.name} clauses={chosen.brandClauses} />
+        </div>
+      ) : null}
 
       <PromptInput
         value={prompt}

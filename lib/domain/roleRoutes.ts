@@ -91,9 +91,10 @@ export const ROLE_NAV: Record<EffectiveRole, readonly NavItem[]> = {
     // First, not last: since Phase 14 this is where a creator's work starts.
     { href: "/Creator/chat", label: "Chat", icon: "chat" },
     { href: "/Creator/assignments", label: "Assignments", icon: "assignments" },
-    // The rules, readable before the writing. A creator was previously shown
-    // clauses only as citations on work already produced.
-    { href: "/Creator/guidelines", label: "Guidelines", icon: "guide" },
+    // The agency handbook only. A client's own brand guide is scoped to a
+    // client, so it belongs on the chat thread where one has been chosen --
+    // not in a nav page listing every assigned client's guide at once.
+    { href: "/Creator/guidelines", label: "Agency standards", icon: "guide" },
   ],
   client_contact: [
     { href: "/Client", label: "Overview", icon: "overview" },

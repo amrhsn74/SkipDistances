@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 import { EmptyState } from "../Page";
-import { StartChat } from "./StartChat";
+import { StartChat, type ChatClient } from "./StartChat";
 
 /**
  * A person's threads, and the way to start another.
@@ -31,8 +31,8 @@ export function ThreadList({
   showClient,
 }: {
   threads: ThreadSummary[];
-  /** The clients this person may open a thread for. */
-  clients: { client_id: string; name: string }[];
+  /** The clients this person may open a thread for, with their brand rules. */
+  clients: ChatClient[];
   /** `/Creator/chat` or `/ContentLead/chat`. */
   basePath: string;
   showClient: boolean;

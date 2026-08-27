@@ -121,19 +121,27 @@ export default async function Page({
           name="q"
           defaultValue={search}
           placeholder="Filter by client name or id"
-          className="w-full max-w-sm rounded-xl border border-edge bg-surface px-3 py-2 text-sm outline-none focus:border-amber-brand"
+          className="skip-input max-w-sm"
         />
       </form>
 
       <div className="space-y-3">
         {paged.rows.map((team) => (
-          <div key={team.client_id} className="rounded-2xl border border-edge bg-surface">
-            <div className="flex items-center justify-between gap-4 px-4 py-3">
-              <div>
-                <p className="font-heading text-sm font-semibold text-heading">
-                  {team.client_name}
-                </p>
-                <p className="text-xs text-body">{team.client_id}</p>
+          <div
+            key={team.client_id}
+            className="overflow-hidden rounded-2xl border border-edge bg-surface shadow-sm"
+          >
+            <div className="flex items-center justify-between gap-4 border-b border-edge bg-canvas px-4 py-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-amber-brand font-heading text-xs font-bold text-ink">
+                  {team.client_name.slice(0, 2).toUpperCase()}
+                </span>
+                <div>
+                  <p className="font-heading text-sm font-semibold text-heading">
+                    {team.client_name}
+                  </p>
+                  <p className="text-xs text-body/70">{team.client_id}</p>
+                </div>
               </div>
             </div>
             <TeamEditor

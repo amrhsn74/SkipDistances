@@ -3,7 +3,15 @@ import Link from "next/link";
 import type { Page } from "@/domain/pagination";
 import type { ClientSummary, OperationalSummary } from "@/domain/summary";
 
-import { Badge, Card, EmptyState } from "../components/Page";
+import {
+  Badge,
+  Card,
+  DataTable,
+  EmptyState,
+  SectionHeading,
+  StatCard,
+  StatRow,
+} from "../components/Page";
 import { Pagination } from "../components/Pagination";
 
 type OccasionRow = { key: string; name: string; category: string; date: string | undefined };
@@ -37,79 +45,76 @@ export function SummaryPanel({
 }) {
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat
+      <StatRow>
+        <StatCard
           label="Awaiting internal review"
           value={totals.awaiting.internal_review}
           href="/AccountManager/queue"
+          tone="info"
         />
-        <Stat
+        <StatCard
           label="Awaiting client review"
           value={totals.awaiting.client_review}
           href="/AccountManager/calendar"
+          tone="flag"
         />
-        <Stat label="Flagged" value={totals.awaiting.flagged} tone="flag" />
-        <Stat label="Publish failed" value={totals.awaiting.publish_failed} tone="danger" />
-      </div>
+        <StatCard label="Flagged" value={totals.awaiting.flagged} tone="flag" />
+        <StatCard
+          label="Publish failed"
+          value={totals.awaiting.publish_failed}
+          tone="danger"
+        />
+      </StatRow>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <Card title={`By client · ${clients.total}`}>
-            {clients.rows.length === 0 ? (
-              <EmptyState>No clients in scope.</EmptyState>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-edge text-xs uppercase tracking-wide text-body/70">
-                      <th className="pb-3 pr-4 font-semibold">Client</th>
-                      <th className="pb-3 pr-4 font-semibold">Campaigns</th>
-                      <th className="pb-3 pr-4 font-semibold">Items</th>
-                      <th className="pb-3 pr-4 font-semibold">Internal</th>
-                      <th className="pb-3 pr-4 font-semibold">Client</th>
-                      <th className="pb-3 font-semibold">Flagged</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {clients.rows.map((client) => (
-                      <tr
-                        key={client.client_id}
-                        className="border-b border-edge/60 last:border-0"
-                      >
-                        <td className="py-2 pr-4">
-                          <span className="font-semibold text-heading">{client.name}</span>
-                          {client.sensitive_sector ? (
-                            <span className="ml-2">
-                              <Badge tone="flag">Sensitive</Badge>
-                            </span>
-                          ) : null}
-                          <span className="ml-2 text-xs text-body/70">
-                            {client.markets.map((m) => m.country_code).join(", ")}
-                          </span>
-                        </td>
-                        <td className="py-2 pr-4 text-body">{client.campaign_count}</td>
-                        <td className="py-2 pr-4 text-body">{client.total_items}</td>
-                        <td className="py-2 pr-4 text-body">
-                          {client.awaiting.internal_review}
-                        </td>
-                        <td className="py-2 pr-4 text-body">
-                          {client.awaiting.client_review}
-                        </td>
-                        <td className="py-2 text-body">{client.awaiting.flagged}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+          <SectionHeading title="By client" count={clients.total} />
+          {clients.rows.length === 0 ? (
+            <EmptyState>No clients in scope.</EmptyState>
+          ) : (
+            <DataTable
+              headers={["Client", "Campaigns", "Items", "Internal", "Client", "Flagged"]}
+            >
+              {clients.rows.map((client) => (
+                <tr key={client.client_id} className="skip-tr">
+                  <td className="px-4 py-3">
+                    <p className="font-semibold text-heading">{client.name}</p>
+                    <p className="mt-0.5 flex items-center gap-1.5 text-xs text-body/70">
+                      {client.markets.map((m) => m.country_code).join(", ")}
+                      {client.sensitive_sector ? (
+                        <Badge tone="flag">Sensitive</Badge>
+                      ) : null}
+                    </p>
+                  </td>
+                  <td className="px-4 py-3 text-body">{client.campaign_count}</td>
+                  <td className="px-4 py-3 text-body">{client.total_items}</td>
+                  <td className="px-4 py-3 text-body">{client.awaiting.internal_review}</td>
+                  <td className="px-4 py-3 text-body">{client.awaiting.client_review}</td>
+                  <td className="px-4 py-3">
+                    {/*
+                      A count only wears the flag colours when there is
+                      something to colour -- an orange zero on every row is a
+                      colour that has stopped meaning anything.
+                    */}
+                    {client.awaiting.flagged > 0 ? (
+                      <span className="skip-pill bg-flag-bg text-flag">
+                        {client.awaiting.flagged}
+                      </span>
+                    ) : (
+                      <span className="text-body/50">—</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </DataTable>
+          )}
 
-            {/*
-              Rendered whenever there is more than one page. Below the table
-              rather than above it, so the numbers a reader came for are the
-              first thing under the heading.
-            */}
-            {clients.totalPages > 1 ? <Pagination page={clients} /> : null}
-          </Card>
+          {/*
+            Rendered whenever there is more than one page. Below the table
+            rather than above it, so the numbers a reader came for are the
+            first thing under the heading.
+          */}
+          {clients.totalPages > 1 ? <Pagination page={clients} /> : null}
         </div>
 
         <Card title="Upcoming occasions">
@@ -138,46 +143,5 @@ export function SummaryPanel({
         </Card>
       </div>
     </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  href,
-  tone = "neutral",
-}: {
-  label: string;
-  value: number;
-  href?: string;
-  tone?: "neutral" | "flag" | "danger";
-}) {
-  // Coloured only when there is something to colour. A permanent red zero trains
-  // the eye to ignore the one number that matters.
-  //
-  // Neither of these is amber, deliberately: amber is the brand chrome, so a
-  // flagged count in amber would read as decoration rather than as work waiting.
-  const accent = {
-    neutral: "text-heading",
-    flag: value > 0 ? "text-flag" : "text-heading",
-    danger: value > 0 ? "text-danger" : "text-heading",
-  }[tone];
-
-  const body = (
-    <>
-      <p className="text-xs uppercase tracking-wide text-body/70">{label}</p>
-      <p className={`mt-2 font-heading text-4xl font-semibold ${accent}`}>{value}</p>
-    </>
-  );
-
-  return href ? (
-    <Link
-      href={href}
-      className="rounded-2xl border border-edge bg-surface p-5 shadow-sm transition-colors hover:border-amber-brand"
-    >
-      {body}
-    </Link>
-  ) : (
-    <div className="rounded-2xl border border-edge bg-surface p-5 shadow-sm">{body}</div>
   );
 }

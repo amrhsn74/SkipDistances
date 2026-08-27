@@ -1,4 +1,4 @@
-import { Badge, EmptyState } from "./Page";
+import { EmptyState } from "./Page";
 import type { ScopedClause } from "@/domain/retrievalScope";
 
 /**
@@ -26,7 +26,7 @@ export function ClauseList({ clauses }: { clauses: ScopedClause[] }) {
           className="flex items-start gap-3 rounded-xl border border-edge px-4 py-3"
         >
           <span className="shrink-0">
-            <Badge tone="neutral">{clause.clause_code}</Badge>
+            <span className="skip-clause">{clause.clause_code}</span>
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-medium text-heading">{clause.title}</span>

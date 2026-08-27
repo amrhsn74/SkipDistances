@@ -13,6 +13,7 @@
     "db:reset": "prisma migrate reset --force",
     "db:studio": "prisma studio",
     "db:verify": "tsx scripts/verifySeed.ts",
+    "evaluate": "tsx scripts/evaluate.ts",
     "scheduler": "tsx scripts/scheduler.ts",
     "scheduler:once": "tsx scripts/scheduler.ts --once",
     "analytics": "tsx scripts/analytics.ts",

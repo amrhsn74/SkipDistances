@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { Badge, Card, EmptyState } from "../components/Page";
+import { Badge, Card, EmptyState, StatCard, StatRow } from "../components/Page";
 
 /**
  * What a creator has in front of them, at a glance.
@@ -45,26 +45,36 @@ export function CreatorOverview({
 }) {
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat
+      <StatRow>
+        <StatCard
           label="Flagged"
           value={counts.flagged}
           tone="flag"
           href="/Creator/assignments?flagged=1"
         />
-        <Stat
+        <StatCard
           label="In progress"
           value={counts.inProgress}
+          tone="info"
           href="/Creator/assignments?status=drafted"
         />
-        <Stat label="Assigned to you" value={counts.assigned} href="/Creator/assignments" />
-        <Stat
+        <StatCard
+          label="Assigned to you"
+          value={counts.assigned}
+          tone="info"
+          href="/Creator/assignments"
+        />
+        {/*
+          Left neutral on purpose. This work is submitted and sitting with a
+          reviewer -- it is somebody else's move, and tinting it like the three
+          counts that *are* this creator's move would say otherwise.
+        */}
+        <StatCard
           label="Awaiting review"
           value={counts.awaitingReview}
           href="/Creator/assignments?status=pending_internal_review"
-          muted
         />
-      </div>
+      </StatRow>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
@@ -129,48 +139,5 @@ export function CreatorOverview({
         </Card>
       </div>
     </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  href,
-  tone,
-  muted,
-}: {
-  label: string;
-  value: number;
-  href?: string;
-  tone?: "flag";
-  /** Shown, but not as something demanding action -- it is somebody else's move. */
-  muted?: boolean;
-}) {
-  const body = (
-    <div
-      className={[
-        "rounded-2xl border p-4",
-        tone === "flag" && value > 0
-          ? "border-flag/30 bg-flag-bg"
-          : "border-edge bg-surface",
-      ].join(" ")}
-    >
-      <p className={`text-xs font-semibold ${muted ? "text-body" : "text-heading"}`}>{label}</p>
-      <p
-        className={`mt-1 font-heading text-3xl font-semibold ${
-          tone === "flag" && value > 0 ? "text-flag" : muted ? "text-body" : "text-heading"
-        }`}
-      >
-        {value}
-      </p>
-    </div>
-  );
-
-  return href ? (
-    <Link href={href} className="block hover:opacity-90">
-      {body}
-    </Link>
-  ) : (
-    body
   );
 }

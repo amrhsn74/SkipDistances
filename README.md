@@ -59,6 +59,10 @@ run without it. Get one at [aistudio.google.com/apikey](https://aistudio.google.
 | `npm run db:verify` | Assert the seeded data holds its invariants |
 | `npm run db:studio` | Browse the database in Prisma Studio |
 | `npm run db:reset` | Drop and rebuild the database, then reseed |
+| `npm test` | The full suite — no network, no API key |
+| `npm run check` | Typecheck, lint and test: what CI would run |
+| `npm run evaluate` | **The graded evaluation** — 27 briefs vs. the answer key |
+| `npm run evaluate -- --live` | The same, calling the real Gemini API |
 | `npm run test:live` | Tests that call the real Gemini API (needs `GEMINI_API_KEY`) |
 
 ## Signing in
@@ -150,16 +154,17 @@ Following [docs/project-plan.md](docs/project-plan.md), one phase per layer.
 - [x] **Phase 1** — Data layer: schema (21 entities) + seed
 - [x] **Phase 2** — Domain / rules layer
 - [x] **Phase 3** — Guarded Content Engine
-- [ ] **Phase 4** — API layer
-- [ ] **Phase 5** — Presentation shell + Account Manager dashboard
-- [ ] **Phase 6** — Two-stage review screen
-- [ ] **Phase 7** — Content Creator dashboard
-- [ ] **Phase 8** — Client dashboard
-- [ ] **Phase 9** — Publishing layer
-- [ ] **Phase 10** — Analytics layer
-- [ ] **Phase 11** — Admin dashboard + audit trail completeness
-- [ ] **Phase 12** — Evaluation harness + full test pass
+- [x] **Phase 4** — API layer
+- [x] **Phase 5** — Presentation shell + Account Manager dashboard
+- [x] **Phase 6** — Two-stage review screen
+- [x] **Phase 7** — Content Creator dashboard
+- [x] **Phase 8** — Client dashboard
+- [x] **Phase 9** — Publishing layer
+- [x] **Phase 10** — Analytics layer
+- [x] **Phase 11** — Admin dashboard + audit trail completeness
+- [x] **Phase 12** — Evaluation harness + full test pass
 - [ ] **Phase 13** — Polish + demo dry run
+- [x] **Phase 14** — Chat-led content creation
 
 ## Notes
 

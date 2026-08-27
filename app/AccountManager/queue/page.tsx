@@ -82,8 +82,12 @@ export default async function QueuePage({
             },
           ]}
           toggles={[{ name: "attention", label: "Needs attention" }]}
+          flush
         />
+      </Card>
 
+      {/* The table draws its own card, so it sits outside this one. */}
+      <div className="mt-4">
         {result.rows.length === 0 ? (
           <EmptyState>Nothing matches those filters.</EmptyState>
         ) : (
@@ -98,7 +102,7 @@ export default async function QueuePage({
         )}
 
         <Pagination page={result} />
-      </Card>
+      </div>
     </>
   );
 }

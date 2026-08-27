@@ -1,12 +1,10 @@
-import Link from "next/link";
-
 import { currentUser } from "@/api/request";
 import { visibleClientIds } from "@/domain/accessScope";
 import { listClients } from "@/domain/clientRoster";
 import { operationalSummary } from "@/domain/summary";
 
 import { Avatar } from "../components/Avatar";
-import { Badge, Card, EmptyState, PageHeader } from "../components/Page";
+import { Badge, Card, EmptyState, PageHeader, StatCard, StatRow } from "../components/Page";
 
 /**
  * The client's own front page.
@@ -112,25 +110,30 @@ export default async function Page() {
             <EmptyState>Nothing drafted yet. Work appears here once it exists.</EmptyState>
           ) : (
             <>
-              <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <Stat
+              <StatRow flush>
+                {/*
+                  The only count on this page that is the client's own move,
+                  so it is the only one that carries a colour.
+                */}
+                <StatCard
                   label="Waiting on you"
                   value={counts.awaiting.client_review}
-                  emphasis={counts.awaiting.client_review > 0}
+                  tone="flag"
+                  href="/Client/approvals"
                 />
-                <Stat label="In review internally" value={counts.awaiting.internal_review} />
-                <Stat label="Scheduled" value={counts.by_status.scheduled} />
-                <Stat label="Published" value={counts.by_status.published} />
-              </dl>
+                <StatCard
+                  label="In review internally"
+                  value={counts.awaiting.internal_review}
+                />
+                <StatCard label="Scheduled" value={counts.by_status.scheduled} />
+                <StatCard
+                  label="Published"
+                  value={counts.by_status.published}
+                  tone="ok"
+                  href="/Client/analytics"
+                />
+              </StatRow>
 
-              {counts.awaiting.client_review > 0 ? (
-                <p className="mt-4">
-                  <Link href="/Client/approvals" className="skip-btn skip-btn-primary">
-                    Review {counts.awaiting.client_review}{" "}
-                    {counts.awaiting.client_review === 1 ? "item" : "items"}
-                  </Link>
-                </p>
-              ) : null}
             </>
           )}
         </Card>
@@ -151,28 +154,5 @@ export default async function Page() {
         </Card>
       </div>
     </>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  emphasis = false,
-}: {
-  label: string;
-  value: number;
-  emphasis?: boolean;
-}) {
-  return (
-    <div
-      className={
-        emphasis
-          ? "rounded-xl border-2 border-amber-brand bg-canvas px-4 py-3"
-          : "rounded-xl border border-edge bg-canvas px-4 py-3"
-      }
-    >
-      <dt className="text-xs uppercase tracking-wide text-body/70">{label}</dt>
-      <dd className="mt-1 font-heading text-2xl font-semibold text-heading">{value}</dd>
-    </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge } from "../../components/Page";
+import { Badge, DataTable } from "../../components/Page";
 
 type QueueRow = {
   campaign_id: string;
@@ -24,49 +24,38 @@ type QueueRow = {
  */
 export function QueueTable({ rows }: { rows: QueueRow[] }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm">
-        <thead>
-          <tr className="border-b border-edge text-xs uppercase tracking-wide text-body/70">
-            <th className="pb-3 pr-4 font-semibold">Brief</th>
-            <th className="pb-3 pr-4 font-semibold">Client</th>
-            <th className="pb-3 pr-4 font-semibold">Status</th>
-            <th className="pb-3 pr-4 font-semibold">Items</th>
-            <th className="pb-3 font-semibold">Submitted</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.campaign_id} className="border-b border-edge/60 last:border-0">
-              <td className="py-3 pr-4">
-                <span className="font-semibold text-heading">{row.title}</span>
-                <span className="mt-1 flex flex-wrap gap-1">
-                  {row.override_attempt_detected ? (
-                    // Recorded, never obeyed. Surfaced because an override
-                    // attempt is exactly what a manager needs to see about a
-                    // brief before they act on it.
-                    <Badge tone="danger">Override attempt</Badge>
-                  ) : null}
-                  {row.compliance_review_required ? (
-                    <Badge tone="info">Compliance review</Badge>
-                  ) : null}
-                  {row.flag_count > 0 ? (
-                    <Badge tone="flag">
-                      {row.flag_count} flag{row.flag_count === 1 ? "" : "s"}
-                    </Badge>
-                  ) : null}
-                </span>
-              </td>
-              <td className="py-3 pr-4 text-body">{row.client_name}</td>
-              <td className="py-3 pr-4">
-                <Badge tone={row.status === "complete" ? "ok" : "neutral"}>{row.status}</Badge>
-              </td>
-              <td className="py-3 pr-4 text-body">{row.item_count}</td>
-              <td className="py-3 text-body">{new Date(row.created_at).toLocaleString()}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <DataTable headers={["Brief", "Client", "Status", "Items", "Submitted"]}>
+      {rows.map((row) => (
+        <tr key={row.campaign_id} className="skip-tr">
+          <td className="px-4 py-3">
+            <span className="font-semibold text-heading">{row.title}</span>
+            <span className="mt-1 flex flex-wrap gap-1">
+              {row.override_attempt_detected ? (
+                // Recorded, never obeyed. Surfaced because an override
+                // attempt is exactly what a manager needs to see about a
+                // brief before they act on it.
+                <Badge tone="danger">Override attempt</Badge>
+              ) : null}
+              {row.compliance_review_required ? (
+                <Badge tone="info">Compliance review</Badge>
+              ) : null}
+              {row.flag_count > 0 ? (
+                <Badge tone="flag">
+                  {row.flag_count} flag{row.flag_count === 1 ? "" : "s"}
+                </Badge>
+              ) : null}
+            </span>
+          </td>
+          <td className="px-4 py-3 text-body">{row.client_name}</td>
+          <td className="px-4 py-3">
+            <Badge tone={row.status === "complete" ? "ok" : "neutral"}>{row.status}</Badge>
+          </td>
+          <td className="px-4 py-3 text-body">{row.item_count}</td>
+          <td className="px-4 py-3 whitespace-nowrap text-body">
+            {new Date(row.created_at).toLocaleString()}
+          </td>
+        </tr>
+      ))}
+    </DataTable>
   );
 }

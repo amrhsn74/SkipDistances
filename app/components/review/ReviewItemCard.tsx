@@ -223,9 +223,14 @@ function Citations({ citations }: { citations: ReviewItemView["citations"] }) {
           <li key={c.clause_id}>
             <span
               title={c.title}
-              className="inline-flex items-center gap-1.5 rounded-md border border-edge bg-canvas px-2 py-1 text-xs text-body"
+              className="inline-flex items-center gap-1.5 rounded-md border border-edge bg-canvas py-1 pl-1 pr-2 text-xs text-body"
             >
-              <span className="font-semibold text-heading">{c.clause_code}</span>
+              {/*
+                The code is monospaced so CR.2 and CR.10 line up down a wrapped
+                list, and tinted so it reads as the citation it is rather than as
+                the first word of the title.
+              */}
+              <span className="skip-clause">{c.clause_code}</span>
               <span className="max-w-[16rem] truncate">{c.title}</span>
               {c.source_type === "agency" ? (
                 <span className="text-body/60">agency</span>

@@ -111,46 +111,48 @@ export default async function Page({
       {result.rows.length === 0 ? (
         <EmptyState>Nothing recorded matches that.</EmptyState>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-edge bg-surface">
-          <table className="w-full min-w-[48rem] text-sm">
-            <thead className="border-b border-edge text-left text-xs text-body">
-              <tr>
-                <th className="px-4 py-3 font-semibold">When</th>
-                <th className="px-4 py-3 font-semibold">Who</th>
-                <th className="px-4 py-3 font-semibold">Action</th>
-                <th className="px-4 py-3 font-semibold">Entity</th>
-                <th className="px-4 py-3 font-semibold">Detail</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-edge">
-              {result.rows.map((row) => (
-                <tr key={row.audit_id}>
-                  <td className="whitespace-nowrap px-4 py-3 text-xs text-body">
-                    {row.performed_at.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-heading">
-                    {/* A null actor is the system, not a missing name: the
-                        scheduler publishes without a person behind it. */}
-                    {row.performed_by?.name ?? "System"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge tone={row.action === "flag_raised" ? "flag" : "neutral"}>
-                      {row.action}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-body">
-                    {row.entity_type}
-                    <span className="block font-mono text-[10px] opacity-70">
-                      {row.entity_id}
-                    </span>
-                  </td>
-                  <td className="max-w-md px-4 py-3 text-xs text-body">
-                    <span className="line-clamp-2 break-all">{row.details ?? "—"}</span>
-                  </td>
+        <div className="overflow-hidden rounded-2xl border border-edge bg-surface shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[48rem] text-sm">
+              <thead>
+                <tr className="border-b border-edge bg-canvas">
+                  <th scope="col" className="skip-th">When</th>
+                  <th scope="col" className="skip-th">Who</th>
+                  <th scope="col" className="skip-th">Action</th>
+                  <th scope="col" className="skip-th">Entity</th>
+                  <th scope="col" className="skip-th">Detail</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {result.rows.map((row) => (
+                  <tr key={row.audit_id} className="skip-tr">
+                    <td className="whitespace-nowrap px-4 py-3 text-xs text-body">
+                      {row.performed_at.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-heading">
+                      {/* A null actor is the system, not a missing name: the
+                          scheduler publishes without a person behind it. */}
+                      {row.performed_by?.name ?? "System"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge tone={row.action === "flag_raised" ? "flag" : "neutral"}>
+                        {row.action}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-body">
+                      {row.entity_type}
+                      <span className="block font-mono text-[10px] opacity-70">
+                        {row.entity_id}
+                      </span>
+                    </td>
+                    <td className="max-w-md px-4 py-3 text-xs text-body">
+                      <span className="line-clamp-2 break-all">{row.details ?? "—"}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

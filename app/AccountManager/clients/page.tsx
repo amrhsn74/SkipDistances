@@ -71,6 +71,10 @@ export default async function ClientsPage({
         }
       />
 
+      {/*
+        The filter row sits in its own card above the table. Previously both
+        shared one, which put a bordered table inside a bordered card.
+      */}
       <Card>
         <FilterBar
           searchPlaceholder="Name or client id…"
@@ -90,8 +94,11 @@ export default async function ClientsPage({
             },
           ]}
           toggles={[{ name: "sensitive", label: "Sensitive sector" }]}
+          flush
         />
+      </Card>
 
+      <div className="mt-4">
         {result.rows.length === 0 ? (
           <EmptyState>
             No clients match those filters. Clear them, or create a client.
@@ -101,7 +108,7 @@ export default async function ClientsPage({
         )}
 
         <Pagination page={result} />
-      </Card>
+      </div>
     </>
   );
 }

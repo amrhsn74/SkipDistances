@@ -24,10 +24,13 @@ export function FilterBar({
   searchPlaceholder = "Search…",
   selects = [],
   toggles = [],
+  flush = false,
 }: {
   searchPlaceholder?: string;
   selects?: SelectFilter[];
   toggles?: { name: string; label: string }[];
+  /** Drop the bottom margin, where the bar is the last thing in its card. */
+  flush?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -59,7 +62,7 @@ export function FilterBar({
   );
 
   return (
-    <div className="mb-4 flex flex-wrap items-end gap-3">
+    <div className={`flex flex-wrap items-end gap-3 ${flush ? "" : "mb-4"}`}>
       <form
         onSubmit={(e) => {
           e.preventDefault();

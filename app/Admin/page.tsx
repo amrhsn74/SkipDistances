@@ -1,11 +1,9 @@
-import Link from "next/link";
-
 import { currentUser } from "@/api/request";
 import { openGovernanceFlags } from "@/domain/misuse";
 import { parsePage, toPage, toSkipTake } from "@/domain/pagination";
 import { operationalSummary } from "@/domain/summary";
 
-import { Badge, Card, PageHeader } from "../components/Page";
+import { Card, PageHeader, StatCard } from "../components/Page";
 import { SummaryPanel } from "../AccountManager/SummaryPanel";
 
 /**
@@ -68,45 +66,27 @@ export default async function AdminHome({
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <Link href="/Admin/governance" className="block hover:opacity-90">
-          <div
-            className={`rounded-2xl border p-4 ${
-              high > 0 ? "border-danger/30 bg-danger-bg" : "border-edge bg-surface"
-            }`}
-          >
-            <p className="text-xs font-semibold text-heading">Open misuse flags</p>
-            <p
-              className={`mt-1 font-heading text-3xl font-semibold ${
-                high > 0 ? "text-danger" : "text-heading"
-              }`}
-            >
-              {flags.length}
-            </p>
-            {high > 0 ? (
-              <p className="mt-1">
-                <Badge tone="danger">{high} high severity</Badge>
-              </p>
-            ) : null}
-          </div>
-        </Link>
-
-        <Link href="/Admin/roles" className="block hover:opacity-90">
-          <div className="rounded-2xl border border-edge bg-surface p-4">
-            <p className="text-xs font-semibold text-heading">Clients</p>
-            <p className="mt-1 font-heading text-3xl font-semibold text-heading">
-              {summary.totals.clients}
-            </p>
-            <p className="mt-1 text-xs text-body">Who works on what</p>
-          </div>
-        </Link>
-
-        <Link href="/Admin/audit" className="block hover:opacity-90">
-          <div className="rounded-2xl border border-edge bg-surface p-4">
-            <p className="text-xs font-semibold text-heading">Audit trail</p>
-            <p className="mt-1 font-heading text-3xl font-semibold text-heading">All</p>
-            <p className="mt-1 text-xs text-body">Every recorded change</p>
-          </div>
-        </Link>
+        <StatCard
+          label="Open misuse flags"
+          value={flags.length}
+          href="/Admin/governance"
+          // Danger only while something high-severity is open. A permanently red
+          // tile is a tile an admin stops reading.
+          tone={high > 0 ? "danger" : "neutral"}
+          hint={high > 0 ? `${high} high severity` : undefined}
+        />
+        <StatCard
+          label="Clients"
+          value={summary.totals.clients}
+          href="/Admin/roles"
+          hint="Who works on what"
+        />
+        <StatCard
+          label="Audit trail"
+          value="All"
+          href="/Admin/audit"
+          hint="Every recorded change"
+        />
       </div>
 
       <div className="mb-6">

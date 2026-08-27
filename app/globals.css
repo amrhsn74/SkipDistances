@@ -118,3 +118,44 @@ h6 {
   @apply mb-1 block text-sm font-medium;
   color: var(--skip-heading);
 }
+
+/*
+ * Table furniture.
+ *
+ * The mockups settle every table on one treatment: a tinted header strip with
+ * small uppercase labels, hairline row rules, and a row that lifts on hover.
+ * That is three or four repeated utilities per table across a dozen screens, so
+ * it lives here -- the alternative is a header that is `text-body/70` on the
+ * roster and `text-body/60` on the audit trail because two people typed it.
+ */
+.skip-th {
+  @apply px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wide;
+  color: #94a3b8;
+}
+
+.skip-tr {
+  @apply border-b transition-colors last:border-b-0;
+  border-color: var(--skip-border);
+}
+
+.skip-tr:hover {
+  background: var(--skip-canvas);
+}
+
+/*
+ * A small pill, for a count or a one-word state sitting inside a row.
+ *
+ * Distinct from `Badge`: that one is a bordered status badge carrying a tone,
+ * this is the borderless chip the mockups use for counts and inline labels.
+ * Callers supply the colour pair, because the pair is what makes it a status.
+ */
+.skip-pill {
+  @apply inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold;
+}
+
+/* A clause code. Monospaced so CR.2 and CR.10 line up down a list. */
+.skip-clause {
+  @apply inline-flex items-center rounded px-2 py-0.5 font-mono text-[10px] font-semibold;
+  background: var(--skip-info-bg);
+  color: var(--skip-info);
+}
